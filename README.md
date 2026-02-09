@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📍 Witty (위티)
+> **"더 이상 스크롤 올리지 마세요."** > 흩어진 인스타 릴스, 블로그 링크, 스크린샷을 AI가 자동으로 정리해주는 스마트 여행 플래너
 
-## Getting Started
+---
 
-First, run the development server:
+## 🚀 서비스 개요
+친구들과 여행 계획을 세울 때, 인스타 DM이나 카톡으로 공유되는 수많은 맛집과 꿀팁 정보를 찾느라 고생한 경험이 있으신가요? 
+**Witty**는 공유된 링크나 사진을 분석하여 정보를 구조화하고, 최적의 동선까지 제안하는 AI 기반 여행 정보 정리 서비스입니다.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ 핵심 기능 (Key Features)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. 자동 정보 추출 및 카테고리화
+- **공유하기(Share Extension):** 인스타 릴스나 네이버 블로그 링크를 앱으로 보내기만 하면 끝.
+- **AI OCR/Vision 분석:** 스크린샷 내 텍스트와 이미지를 분석하여 장소명, 운영시간, 꿀팁 등을 추출.
+- **스마트 분류:** 맛집, 관광지, 숙소, 교통 등 카테고리별 자동 분류.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. AI 동선 최적화 (Smart Route)
+- **자동 동선 생성:** 정리된 장소들을 기반으로 Google Maps API를 활용한 최적 이동 경로 제안.
+- **지도 시각화:** 친구들과 함께 보는 전체 여행 지도 레이아웃 제공.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. 실시간 협업 (Collaboration)
+- **공동 편집:** 친구들을 초대하여 실시간으로 정보를 공유하고 메모 추가.
+- **체크리스트 & 예산:** 여행 전 준비물과 공동 경비를 한곳에서 관리.
 
-## Learn More
+## 🛠 Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+| 구분 | 기술 스택 |
+| :--- | :--- |
+| **Frontend** | React / Next.js (Web/PWA) |
+| **Backend** | Supabase (Auth, Database, Storage) |
+| **AI Engine** | Claude 4.5 Sonnet / GPT-4o (Vision API) |
+| **Maps** | Google Maps Platform API |
+| **Deployment** | Vercel / Firebase Hosting |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📈 시장 분석 및 차별성
+- **타겟:** 인스타/블로그 기반 정보를 선호하는 2030 여행족 및 그룹 여행자.
+- **문제 해결:** 기존 서비스(노션, 트리플 등)의 수동 복붙 번거로움을 **AI 자동화**로 해결.
+- **성장 전략:** 친구 초대 기반의 바이럴 효과 및 한국 특화(블로그/인스타) 데이터 처리 기술.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📅 Roadmap (MVP)
+- [ ] **1단계:** 링크/이미지 공유 기능 및 AI 정보 추출 엔진 구축
+- [ ] **2단계:** 카테고리별 리스트 뷰 및 간단한 메모 기능
+- [ ] **3단계:** 지도 API 연동 및 동선 시각화
+- [ ] **4단계:** 친구 초대 및 실시간 동기화 기능 고도화
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💡 개발 배경
+"많은 정보를 공유한 탓에 스크롤을 올리다가 정보를 다시 찾는 걸 포기했던 불편함에서 시작되었습니다. 누구나 쉽고 빠르게 정보를 정리하고 여행 자체에만 집중할 수 있는 환경을 만들고자 합니다."
