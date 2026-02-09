@@ -1,0 +1,25 @@
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "tabWidth": 2,
+  "printWidth": 80,
+  "arrowParens": "always",
+  "plugins": ["prettier-plugin-tailwindcss"]
+}
+```
+
+**해석:**
+- `semi`: 세미콜론 사용 `;`
+- `singleQuote`: 작은따옴표 사용 `'`
+- `tabWidth`: 들여쓰기 2칸
+- `printWidth`: 한 줄 80자 넘으면 자동 줄바꿈
+
+**`.prettierignore` 파일 생성**:
+```
+# 포맷팅 제외 파일들
+.next
+node_modules
+out
+public
+*.json
