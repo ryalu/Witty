@@ -36,7 +36,7 @@ export async function getTripInfos(tripId: string): Promise<TripInfo[]> {
     .order('order', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as TripInfo[];
 }
 
 // 여행 정보 추가
@@ -50,5 +50,5 @@ export async function createTripInfo(
     .single();
 
   if (error) throw error;
-  return data;
+  return data as TripInfo;
 }
