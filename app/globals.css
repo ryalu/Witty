@@ -117,10 +117,14 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+  :root {
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --primary: 160 84% 39%;
+
+    --primary: 262 83% 58%;
+
+    --primary: 25 95% 53%;
   }
 }
