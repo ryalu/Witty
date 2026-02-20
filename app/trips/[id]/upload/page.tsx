@@ -8,12 +8,21 @@ import { uploadImage } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Category } from '@/types/trip';
 
 interface UploadedImage {
   file: File;
   preview: string;
   url?: string;
   uploading: boolean;
+}
+
+interface AnalyzedResult {
+  imageUrl: string;
+  category: Category;
+  name: String;
+  address: string | null;
+  description: string | null;
 }
 
 export default function UploadPage() {
@@ -56,7 +65,7 @@ async function handleUpload() {
   setUploading(true);
 
   try {
-    const analyzedResults = [];
+    const analyzedResults: AnalyzedResult[] = [];
 
     for (let i = 0; i < images.length; i++) {
       console.log(`=== 이미지 ${i + 1} 처리 시작 ===`);
@@ -78,7 +87,7 @@ async function handleUpload() {
         return updated;
       });
 
-      // 2. AI 분석 (Server Action 사용)
+      // 2. AI 분석
       console.log('2. AI 분석 시작...');
       const analyzeResult = await analyzeImage(url);
 
@@ -86,12 +95,29 @@ async function handleUpload() {
         throw new Error(analyzeResult.error || 'AI 분석 실패');
       }
 
-      console.log('AI 분석 결과:', analyzeResult.data);
+      if (!analyzeResult.data || analyzeResult.data.length === 0) {
+        console.log('⚠️ 이미지에서 여행 정보를 찾을 수 없습니다.');
+        // 빈 배열이면 건너뛰기
+        setImages((prev) => {
+          const updated = [...prev];
+          updated[i].uploading = false;
+          return updated;
+        });
+        continue;
+      }
 
-      analyzedResults.push({
-        imageUrl: url,
-        ...analyzeResult.data,
-      });
+      console.log(`AI 분석 결과: ${analyzeResult.data.length}개 발견`);
+
+      // ⭐ 배열로 받은 결과 모두 추가
+      for (const place of analyzeResult.data) {
+        analyzedResults.push({
+          imageUrl: url,
+          category: place.category as Category,
+          name: place.name,
+          address: place.address,
+          description: place.description,
+        });
+      }
 
       setImages((prev) => {
         const updated = [...prev];
@@ -102,16 +128,34 @@ async function handleUpload() {
       console.log(`=== 이미지 ${i + 1} 처리 완료 ===`);
     }
 
-    console.log('모든 분석 완료:', analyzedResults);
+    if (analyzedResults.length === 0) {
+      alert('이미지에서 여행 정보를 찾을 수 없습니다.');
+      setUploading(false);
+      return;
+    }
 
-    // Base64 인코딩해서 URL에 포함
-    const encodedData = encodeURIComponent(JSON.stringify(analyzedResults));
+    console.log(`모든 분석 완료: 총 ${analyzedResults.length}개 정보`);
+
+    // localStorage 저장
+    try {
+      localStorage.setItem('analyzedResults', JSON.stringify(analyzedResults));
+      console.log('✅ localStorage 저장 완료');
+    } catch (e) {
+      console.error('❌ localStorage 저장 실패:', e);
+      throw new Error('데이터 저장 실패');
+    }
 
     setUploading(false);
 
-    alert(`${images.length}개 이미지 분석 완료! 🎉\n정보를 확인하고 저장하세요.`);
+    alert(
+      `${images.length}개 이미지 분석 완료!\n총 ${analyzedResults.length}개 정보를 찾았어요 🎉`
+    );
 
-    router.push(`/trips/${tripId}/review?data=${encodedData}`);
+    // URL 파라미터로 전달
+    const encodedData = encodeURIComponent(JSON.stringify(analyzedResults));
+    setTimeout(() => {
+      router.push(`/trips/${tripId}/review?data=${encodedData}`);
+    }, 100);
   } catch (error: any) {
     console.error('Upload error:', error);
     alert(`오류: ${error.message}`);
