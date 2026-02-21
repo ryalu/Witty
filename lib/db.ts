@@ -10,7 +10,10 @@ export async function getTrips(): Promise<Trip[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map((trip: any) => ({
+    ...trip,
+    is_archived: trip.is_archived ?? false
+  })) as Trip[];
 }
 
 // 여행 생성
@@ -19,12 +22,17 @@ export async function createTrip(
 ): Promise<Trip> {
   const { data, error } = await supabase
     .from('trips')
-    .insert({ ...trip, user_id: TEMP_USER_ID })
+    .insert([{ ...trip, user_id: TEMP_USER_ID,
+      is_archived: trip.is_archived ?? false,
+     }])
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...(data as any),
+    is_archived: (data as any).is_archived ?? false
+  } as Trip;
 }
 
 // 여행 정보 가져오기

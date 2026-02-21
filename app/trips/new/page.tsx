@@ -28,7 +28,10 @@ export default function NewTripPage() {
 
     try {
       setLoading(true);
-      const trip = await createTrip(formData);
+      const trip = await createTrip({
+        ...formData,
+        is_archived: false,
+      });
       alert('여행이 생성되었습니다! 🎉');
       router.push(`/trips/${trip.id}`);
     } catch (error) {

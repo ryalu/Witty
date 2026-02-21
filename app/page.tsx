@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -7,8 +9,8 @@ import type { Trip } from '@/types/trip';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, MapPin, Calendar, Trash2, Check, HelpCircle } from 'lucide-react';
-import Image from 'next/image';
+import { Plus, MapPin, Calendar, Trash2, Check, LayoutGrid, List } from 'lucide-react';
+import { motion } from 'framer-motion';
 import LoadingScreen from '@/components/LoadingScreen';
 
 export default function HomePage() {
@@ -17,9 +19,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [showLoading, setShowLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    // 로딩 화면 표시
     const loadingTimer = setTimeout(() => {
       setShowLoading(false);
     }, 2500);
@@ -37,7 +39,13 @@ export default function HomePage() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTrips(data || []);
+      
+      const tripsWithArchived = (data || []).map(trip => ({
+        ...trip,
+        is_archived: (trip as any).is_archived ?? false
+      }));
+      
+      setTrips(tripsWithArchived as Trip[]);
     } catch (error) {
       console.error('Error loading trips:', error);
     } finally {
@@ -51,10 +59,7 @@ export default function HomePage() {
     }
 
     try {
-      // 여행 정보들 먼저 삭제
       await supabase.from('trip_infos').delete().eq('trip_id', id);
-      
-      // 여행 삭제
       const { error } = await supabase.from('trips').delete().eq('id', id);
 
       if (error) throw error;
@@ -67,8 +72,27 @@ export default function HomePage() {
     }
   }
 
-  // 여행 완료 여부 판단 (end_date 지났는지)
+  async function toggleArchive(trip: Trip) {
+    try {
+      const newArchiveState = !trip.is_archived;
+      const { error } = await supabase
+        .from('trips')
+        .update({ is_archived: newArchiveState } as any)
+        .eq('id', trip.id);
+
+      if (error) throw error;
+
+      alert(newArchiveState ? '완료됨 탭으로 이동했습니다! ✅' : '진행 중 탭으로 복원했습니다! 🔄');
+      loadTrips();
+    } catch (error) {
+      console.error('Archive toggle error:', error);
+      alert('변경 실패');
+    }
+  }
+
   function isTripCompleted(trip: Trip): boolean {
+    if (trip.is_archived) return true;
+
     if (!trip.end_date) return false;
     const endDate = new Date(trip.end_date);
     const today = new Date();
@@ -85,57 +109,61 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white">
-      {/* 히어로 섹션 */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-12 max-w-4xl text-center">
-          <div className="flex justify-center mb-6">
-            <Image
-              src="/witty-logo.png"
-              alt="Witty"
-              width={120}
-              height={120}
-              className="drop-shadow-lg"
-            />
+      {/* 간단한 인사 */}
+      <div className="container mx-auto px-4 pt-8 max-w-4xl">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              내 여행 계획 ✈️
+            </h1>
+            <p className="text-gray-600">
+              AI가 자동으로 정리해주는 스마트 여행 플래너
+            </p>
           </div>
-          <h1 className="text-5xl font-bold text-gray-800 mb-4">
-            Witty
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            재미있고 똑똑하게 여행 계획! ✈️
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button
-              size="lg"
-              onClick={() => router.push('/trips/new')}
-              className="text-lg h-14 px-8"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              새 여행 만들기
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => router.push('/how-to-use')}
-              className="text-lg h-14 px-8"
-            >
-              <HelpCircle className="w-5 h-5 mr-2" />
-              사용 방법 보기
-            </Button>
-          </div>
+
+          {/* 새 여행 버튼 */}
+          <Button
+            size="lg"
+            onClick={() => router.push('/trips/new')}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            새 여행
+          </Button>
         </div>
       </div>
 
       {/* 여행 목록 */}
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 pb-8 max-w-4xl">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="active">
-              진행 중 ({activeTrips.length})
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              완료됨 ({completedTrips.length})
-            </TabsTrigger>
-          </TabsList>
+          {/* 탭 헤더 + 뷰 모드 토글 */}
+          <div className="flex justify-between items-center mb-6">
+            <TabsList className="grid w-auto grid-cols-2">
+              <TabsTrigger value="active">
+                진행 중 ({activeTrips.length})
+              </TabsTrigger>
+              <TabsTrigger value="completed">
+                완료됨 ({completedTrips.length})
+              </TabsTrigger>
+            </TabsList>
+
+            {/* 뷰 모드 버튼 */}
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
 
           {/* 진행 중 여행 */}
           <TabsContent value="active">
@@ -144,7 +172,7 @@ export default function HomePage() {
                 <p className="text-lg text-gray-500">로딩중...</p>
               </div>
             ) : activeTrips.length === 0 ? (
-              <Card>
+              <Card className="card-enhanced">
                 <CardContent className="py-12 text-center">
                   <p className="text-lg text-gray-500 mb-4">
                     아직 여행 계획이 없어요
@@ -156,52 +184,122 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {activeTrips.map((trip) => (
-                  <Card
+              <div className={
+                viewMode === 'grid'
+                  ? 'grid gap-4 md:grid-cols-2 lg:grid-cols-3'
+                  : 'space-y-3'
+              }>
+                {activeTrips.map((trip, index) => (
+                  <motion.div
                     key={trip.id}
-                    className="hover:shadow-lg transition-shadow cursor-pointer group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
                   >
-                    <CardHeader onClick={() => router.push(`/trips/${trip.id}`)}>
-                      <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors">
-                        {trip.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 mb-4">
-                        <p className="flex items-center text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {trip.country}
-                        </p>
-                        {trip.start_date && trip.end_date && (
-                          <p className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {trip.start_date} ~ {trip.end_date}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => router.push(`/trips/${trip.id}`)}
-                        >
-                          보기
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTrip(trip.id, trip.name);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    {viewMode === 'grid' ? (
+                      // 그리드 카드
+                      <Card className="card-enhanced-clickable group">
+                        <CardHeader onClick={() => router.push(`/trips/${trip.id}`)}>
+                          <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors">
+                            {trip.name}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 mb-4">
+                            <p className="flex items-center text-gray-600">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {trip.country}
+                            </p>
+                            {trip.start_date && trip.end_date && (
+                              <p className="flex items-center text-sm text-gray-500">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {trip.start_date} ~ {trip.end_date}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => router.push(`/trips/${trip.id}`)}
+                            >
+                              보기
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleArchive(trip);
+                              }}
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteTrip(trip.id, trip.name);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      // 리스트 카드
+                      <Card className="card-enhanced-clickable">
+                        <CardContent className="py-4 px-6">
+                          <div className="flex items-center justify-between">
+                            <div
+                              className="flex-1 cursor-pointer"
+                              onClick={() => router.push(`/trips/${trip.id}`)}
+                            >
+                              <h3 className="text-lg font-semibold mb-1">{trip.name}</h3>
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span className="flex items-center">
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  {trip.country}
+                                </span>
+                                {trip.start_date && trip.end_date && (
+                                  <span className="flex items-center">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    {trip.start_date} ~ {trip.end_date}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleArchive(trip);
+                                }}
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteTrip(trip.id, trip.name);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -210,7 +308,7 @@ export default function HomePage() {
           {/* 완료된 여행 */}
           <TabsContent value="completed">
             {completedTrips.length === 0 ? (
-              <Card>
+              <Card className="card-enhanced">
                 <CardContent className="py-12 text-center">
                   <p className="text-lg text-gray-500">
                     아직 완료된 여행이 없어요
@@ -218,55 +316,128 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {completedTrips.map((trip) => (
-                  <Card
+              <div className={
+                viewMode === 'grid'
+                  ? 'grid gap-4 md:grid-cols-2 lg:grid-cols-3'
+                  : 'space-y-3'
+              }>
+                {completedTrips.map((trip, index) => (
+                  <motion.div
                     key={trip.id}
-                    className="hover:shadow-lg transition-shadow cursor-pointer opacity-75 group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
                   >
-                    <CardHeader onClick={() => router.push(`/trips/${trip.id}`)}>
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors">
-                          {trip.name}
-                        </CardTitle>
-                        <Check className="w-6 h-6 text-green-500" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 mb-4">
-                        <p className="flex items-center text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {trip.country}
-                        </p>
-                        {trip.start_date && trip.end_date && (
-                          <p className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {trip.start_date} ~ {trip.end_date}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => router.push(`/trips/${trip.id}`)}
-                        >
-                          추억 보기
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTrip(trip.id, trip.name);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    {viewMode === 'grid' ? (
+                      // 그리드 카드
+                      <Card className="card-enhanced-clickable opacity-75 group">
+                        <CardHeader onClick={() => router.push(`/trips/${trip.id}`)}>
+                          <div className="flex items-start justify-between">
+                            <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors">
+                              {trip.name}
+                            </CardTitle>
+                            <Check className="w-6 h-6 text-green-500" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 mb-4">
+                            <p className="flex items-center text-gray-600">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              {trip.country}
+                            </p>
+                            {trip.start_date && trip.end_date && (
+                              <p className="flex items-center text-sm text-gray-500">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {trip.start_date} ~ {trip.end_date}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => router.push(`/trips/${trip.id}`)}
+                            >
+                              추억 보기
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleArchive(trip);
+                              }}
+                            >
+                              복원
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteTrip(trip.id, trip.name);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      // 리스트 카드
+                      <Card className="card-enhanced-clickable opacity-75">
+                        <CardContent className="py-4 px-6">
+                          <div className="flex items-center justify-between">
+                            <div
+                              className="flex-1 cursor-pointer"
+                              onClick={() => router.push(`/trips/${trip.id}`)}
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-lg font-semibold">{trip.name}</h3>
+                                <Check className="w-5 h-5 text-green-500" />
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span className="flex items-center">
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  {trip.country}
+                                </span>
+                                {trip.start_date && trip.end_date && (
+                                  <span className="flex items-center">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    {trip.start_date} ~ {trip.end_date}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleArchive(trip);
+                                }}
+                              >
+                                복원
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteTrip(trip.id, trip.name);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </motion.div>
                 ))}
               </div>
             )}

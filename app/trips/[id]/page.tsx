@@ -17,7 +17,9 @@ import {
   Star, 
   Check, 
   Copy, 
-  GripVertical 
+  GripVertical,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
 import { getGoogleMapsUrl, generateAllPlacesLinks } from '@/lib/maps';
@@ -73,7 +75,7 @@ function SortableInfoCard({
   return (
     <div ref={setNodeRef} style={style}>
       <Card
-        className={`hover:shadow-md transition-shadow ${
+        className={`card-enhanced hover:shadow-md transition-shadow ${
           info.is_completed ? 'opacity-60 bg-gray-50' : ''
         }`}
       >
@@ -182,6 +184,96 @@ function SortableInfoCard({
   );
 }
 
+// Compact 카드 컴포넌트
+function CompactInfoCard({
+  info,
+  tripId,
+  onCheckToggle,
+  onOpenMaps,
+}: {
+  info: TripInfo;
+  tripId: string;
+  onCheckToggle: (id: string, isCompleted: boolean) => void;
+  onOpenMaps: (info: TripInfo) => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <Card 
+      className={`card-enhanced hover:shadow-sm transition-shadow cursor-pointer ${
+        info.is_completed ? 'opacity-60 bg-gray-50' : ''
+      }`}
+      onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
+    >
+      <CardContent className="py-3 px-4">
+        <div className="flex items-center gap-3">
+          {/* 체크박스 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckToggle(info.id, info.is_completed);
+            }}
+            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+              info.is_completed
+                ? 'bg-green-500 border-green-500'
+                : 'border-gray-300 hover:border-green-500'
+            }`}
+          >
+            {info.is_completed && <Check className="w-3 h-3 text-white" />}
+          </button>
+
+          {/* 정보 */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">
+                {CATEGORIES[info.category].emoji}
+              </span>
+              
+              {info.day_number && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  Day {info.day_number}
+                </Badge>
+              )}
+
+              {info.importance > 0 && (
+                <div className="flex gap-0.5">
+                  {Array.from({ length: info.importance }).map((_, i) => (
+                    <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <h3 className={`font-semibold text-sm truncate ${
+              info.is_completed ? 'line-through text-gray-500' : ''
+            }`}>
+              {info.name}
+            </h3>
+            
+            {info.address && (
+              <p className="text-xs text-gray-500 truncate">📍 {info.address}</p>
+            )}
+          </div>
+
+          {/* Google Maps 버튼 */}
+          {(info.place_id || info.name || (info.latitude && info.longitude)) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenMaps(info);
+              }}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ==================== 메인 페이지 컴포넌트 ====================
 export default function TripDetailPage() {
   const params = useParams();
@@ -196,6 +288,7 @@ export default function TripDetailPage() {
   const [showMap, setShowMap] = useState(false);
   const [completionFilter, setCompletionFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [selectedDay, setSelectedDay] = useState<number | null | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'card' | 'compact'>('card');
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -219,7 +312,7 @@ export default function TripDetailPage() {
         .single();
 
       if (tripError) throw tripError;
-      setTrip(tripData);
+      setTrip(tripData as Trip);
 
       const infosData = await getTripInfos(tripId);
       setInfos(infosData);
@@ -372,7 +465,7 @@ export default function TripDetailPage() {
         <div className="flex gap-3 mb-6">
           <Button
             size="lg"
-            className="flex-1 h-16 text-lg"
+            className="flex-1 h-[64px] text-lg"
             onClick={() => router.push(`/trips/${tripId}/upload`)}
           >
             <Upload className="w-6 h-6 mr-2" />
@@ -382,17 +475,17 @@ export default function TripDetailPage() {
           <Button
             size="lg"
             variant={showMap ? 'default' : 'outline'}
-            className="h-16"
+            className="h-[64px]"
             onClick={() => setShowMap(!showMap)}
           >
             <Map className="w-6 h-6" />
           </Button>
 
-          {infos.length > 0 && (
+          {/* {infos.length > 0 && (
             <Button
               size="lg"
               variant="outline"
-              className="h-16"
+              className="h-[64px]"
               onClick={() => {
                 const links = generateAllPlacesLinks(infos);
                 navigator.clipboard.writeText(links);
@@ -401,7 +494,7 @@ export default function TripDetailPage() {
             >
               <Copy className="w-6 h-6" />
             </Button>
-          )}
+          )} */}
         </div>
 
         {/* 지도 */}
@@ -471,8 +564,30 @@ export default function TripDetailPage() {
             ))}
         </div>
 
+        {/* 뷰 모드 토글 */}
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">여행 정보</h3>
+          
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('card')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'compact' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('compact')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
         {/* 카테고리 탭 & 정보 카드 */}
-        <Card>
+        <Card className="card-enhanced">
           <CardHeader>
             <CardTitle>여행 정보</CardTitle>
           </CardHeader>
@@ -495,7 +610,8 @@ export default function TripDetailPage() {
                       위 버튼을 눌러 이미지를 업로드해보세요!
                     </p>
                   </div>
-                ) : (
+                ) : viewMode === 'card' ? (
+                  // 카드 뷰 (드래그 가능)
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -518,6 +634,19 @@ export default function TripDetailPage() {
                       </div>
                     </SortableContext>
                   </DndContext>
+                ) : (
+                  // Compact 뷰 (드래그 불가)
+                  <div className="space-y-2">
+                    {sortedInfos.map((info) => (
+                      <CompactInfoCard
+                        key={info.id}
+                        info={info}
+                        tripId={tripId}
+                        onCheckToggle={handleCheckToggle}
+                        onOpenMaps={handleOpenMaps}
+                      />
+                    ))}
+                  </div>
                 )}
               </TabsContent>
             </Tabs>

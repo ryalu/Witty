@@ -18,6 +18,7 @@ export interface Trip {
   start_date: string | null;
   end_date: string | null;
   user_id: string;
+  is_archived: boolean;
 }
 
 export interface TripInfo {
