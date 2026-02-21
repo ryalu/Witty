@@ -83,6 +83,8 @@ export default function ReviewPage() {
           latitude: info.latitude || null,
           longitude: info.longitude || null,
           place_id: info.place_id || null,
+          is_completed: false,
+          importance: 0,
         });
       }
 

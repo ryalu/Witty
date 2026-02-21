@@ -18,6 +18,66 @@ const MARKER_COLORS = {
   other: '#9B9B9B',
 } as const;
 
+// 마커 SVG 생성 함수
+function createMarkerSVG(
+  info: TripInfo,
+  categoryColor: string
+): string {
+  const isCompleted = info.is_completed;
+  const importance = info.importance || 0;
+  
+  // 완료된 장소는 회색
+  const fillColor = isCompleted ? '#9CA3AF' : categoryColor;
+  
+  // 테두리 색상 (중요도에 따라)
+  let strokeColor = 'white';
+  let strokeWidth = 2;
+  
+  if (!isCompleted && importance === 3) {
+    strokeColor = '#EF4444'; // 빨강 (필수)
+    strokeWidth = 3;
+  } else if (!isCompleted && importance === 2) {
+    strokeColor = '#F59E0B'; // 주황 (중요)
+    strokeWidth = 3;
+  }
+  
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+      <!-- 메인 원 -->
+      <circle 
+        cx="16" 
+        cy="16" 
+        r="12" 
+        fill="${fillColor}" 
+        stroke="${strokeColor}" 
+        stroke-width="${strokeWidth}"
+      />
+      
+      <!-- 완료 체크 표시 -->
+      ${
+        isCompleted
+          ? `<path 
+              d="M 10 16 L 14 20 L 22 12" 
+              stroke="white" 
+              stroke-width="2" 
+              fill="none" 
+              stroke-linecap="round" 
+              stroke-linejoin="round"
+            />`
+          : ''
+      }
+      
+      <!-- 중요도 별표시 (우측 상단) -->
+      ${
+        !isCompleted && importance > 0
+          ? `<circle cx="24" cy="8" r="6" fill="#FCD34D"/>
+             <text x="24" y="11" text-anchor="middle" font-size="8" fill="#92400E">★</text>`
+          : ''
+      }
+    </svg>
+  `;
+}
+
 export default function TripMap({ infos }: TripMapProps) {
   const [selectedInfo, setSelectedInfo] = useState<TripInfo | null>(null);
 
@@ -103,22 +163,24 @@ export default function TripMap({ infos }: TripMapProps) {
     >
       {validInfos.map((info) => (
         <Marker
-          key={info.id}
-          position={{
+            key={info.id}
+            position={{
             lat: info.latitude!,
             lng: info.longitude!,
-          }}
-          onClick={() => setSelectedInfo(info)}
-          icon={{
-            url: `data:image/svg+xml,${encodeURIComponent(`
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" fill="${MARKER_COLORS[info.category as Category]}" stroke="white" stroke-width="2"/>
-              </svg>
-            `)}`,
-            scaledSize: new google.maps.Size(24, 24),
-          }}
+            }}
+            onClick={() => setSelectedInfo(info)}
+            icon={{
+            url: `data:image/svg+xml,${encodeURIComponent(
+                createMarkerSVG(
+                info,
+                MARKER_COLORS[info.category as Category]
+                )
+            )}`,
+            scaledSize: new google.maps.Size(32, 32),
+            anchor: new google.maps.Point(16, 16),
+            }}
         />
-      ))}
+        ))}
 
       {selectedInfo && (
         <InfoWindow

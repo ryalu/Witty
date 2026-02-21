@@ -22,9 +22,14 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          importance: number
+          is_completed: boolean
+          latitude: number | null
+          longitude: number | null
           memo: string | null
           name: string
           order: number
+          place_id: string | null
           trip_id: string
         }
         Insert: {
@@ -34,9 +39,14 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          importance?: number
+          is_completed?: boolean
+          latitude?: number | null
+          longitude?: number | null
           memo?: string | null
           name: string
           order?: number
+          place_id?: string | null
           trip_id: string
         }
         Update: {
@@ -46,9 +56,14 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          importance?: number
+          is_completed?: boolean
+          latitude?: number | null
+          longitude?: number | null
           memo?: string | null
           name?: string
           order?: number
+          place_id?: string | null
           trip_id?: string
         }
         Relationships: [

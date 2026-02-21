@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Trash2, Search, MapPin, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Search, MapPin, ExternalLink, Star } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
 
 export default function EditInfoPage() {
@@ -111,6 +111,8 @@ export default function EditInfoPage() {
           latitude: info.latitude,
           longitude: info.longitude,
           place_id: info.place_id,
+          importance: info.importance,
+          is_completed: info.is_completed,
         })
         .eq('id', infoId);
 
@@ -229,6 +231,56 @@ export default function EditInfoPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* 중요도 선택 */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                중요도
+              </label>
+              <div className="flex gap-2">
+                {[0, 1, 2, 3].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setInfo({ ...info, importance: level })}
+                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
+                      info.importance === level
+                        ? 'border-yellow-400 bg-yellow-50'
+                        : 'border-gray-200 hover:border-yellow-300'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex gap-0.5">
+                        {level === 0 ? (
+                          <span className="text-sm text-gray-500">없음</span>
+                        ) : (
+                          Array.from({ length: level }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-5 h-5 ${
+                                info.importance === level
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'fill-gray-300 text-gray-300'
+                              }`}
+                            />
+                          ))
+                        )}
+                      </div>
+                      {level > 0 && (
+                        <span className="text-xs text-gray-600">
+                          {level === 1 && '보통'}
+                          {level === 2 && '중요'}
+                          {level === 3 && '필수'}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 꼭 가야 할 곳은 별표로 표시하세요
+              </p>
             </div>
 
             {/* 이름 + 재검색 버튼 */}

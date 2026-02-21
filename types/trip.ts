@@ -34,6 +34,8 @@ export interface TripInfo {
   latitude: number | null;
   longitude: number | null;
   place_id: string | null;
+  is_completed: boolean;
+  importance: number;
 }
 
 export type Category = TripInfo['category'];

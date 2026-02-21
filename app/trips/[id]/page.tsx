@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, Plus, Map, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, Map, ExternalLink, Star, Check, Copy } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
-import { getGoogleMapsUrl } from '@/lib/maps';
+import { getGoogleMapsUrl, generateAllPlacesLinks } from '@/lib/maps';
 import TripMap from '@/components/trip/TripMap';
 
 export default function TripDetailPage() {
@@ -24,6 +24,7 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showMap, setShowMap] = useState(false);
+  const [completionFilter, setCompletionFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   useEffect(() => {
     loadData();
@@ -52,12 +53,20 @@ export default function TripDetailPage() {
     }
   }
 
-  // 카테고리별 필터링
-  const filteredInfos =
-    selectedCategory === 'all'
-      ? infos
-      : infos.filter((info) => info.category === selectedCategory);
-
+  // 카테고리 + 완료 여부 필터링
+  const filteredInfos = infos.filter((info) => {
+    // 카테고리 필터
+    const categoryMatch = selectedCategory === 'all' || info.category === selectedCategory;
+    
+    // 완료 여부 필터
+    const completionMatch = 
+      completionFilter === 'all' ||
+      (completionFilter === 'pending' && !info.is_completed) ||
+      (completionFilter === 'completed' && info.is_completed);
+    
+    return categoryMatch && completionMatch;
+  });
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -127,6 +136,23 @@ export default function TripDetailPage() {
           >
             <Map className="w-6 h-6" />
           </Button>
+
+          {/* 링크 복사 버튼 */}
+          {infos.length > 0 && (
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-16"
+              onClick={() => {
+                const links = generateAllPlacesLinks(infos);
+                navigator.clipboard.writeText(links);
+                alert('📋 모든 장소 링크가 복사되었습니다!\n메모앱이나 카톡에 붙여넣기 하세요.');
+              }}
+            >
+              <Copy className="w-6 h-6" />
+            </Button>
+          )}  
+
         </div>
 
         {/* 지도 표시 */}
@@ -140,6 +166,31 @@ export default function TripDetailPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* 완료 여부 필터 */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={completionFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCompletionFilter('all')}
+          >
+            전체 ({infos.length})
+          </Button>
+          <Button
+            variant={completionFilter === 'pending' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCompletionFilter('pending')}
+          >
+            미방문 ({infos.filter(i => !i.is_completed).length})
+          </Button>
+          <Button
+            variant={completionFilter === 'completed' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCompletionFilter('completed')}
+          >
+            완료 ({infos.filter(i => i.is_completed).length})
+          </Button>
+        </div>
 
         {/* 카테고리 탭 */}
         <Card>
@@ -176,18 +227,74 @@ export default function TripDetailPage() {
                       }}
                     >
                       <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <Badge className={CATEGORIES[info.category].color}>
-                              {CATEGORIES[info.category].emoji}{' '}
-                              {CATEGORIES[info.category].label}
-                            </Badge>
-                            <CardTitle className="text-xl mt-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={CATEGORIES[info.category].color}>
+                                {CATEGORIES[info.category].emoji}{' '}
+                                {CATEGORIES[info.category].label}
+                              </Badge>
+
+                              {/* 중요도 표시 */}
+                              {info.importance > 0 && (
+                                <div className="flex gap-0.5">
+                                  {Array.from({ length: info.importance }).map((_, i) => (
+                                    <Star 
+                                      key={i} 
+                                      className="w-4 h-4 fill-yellow-400 text-yellow-400" 
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <CardTitle 
+                              className={`text-xl cursor-pointer hover:text-blue-600 ${
+                                info.is_completed ? 'line-through text-gray-500' : ''
+                              }`}
+                              onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
+                            >
                               {info.name}
                             </CardTitle>
                           </div>
+
+                          {/* 체크박스 */}
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const { error } = await supabase
+                                  .from('trip_infos')
+                                  .update({ is_completed: !info.is_completed})
+                                  .eq('id', info.id);
+                                
+                                if (error) throw error;
+                                
+                                // 상태 업데이트
+                                setInfos(prev => 
+                                  prev.map(i => 
+                                    i.id === info.id 
+                                      ? { ...i, is_completed: !i.is_completed }
+                                      : i
+                                  )
+                                );
+                              } catch (error) {
+                                console.error('체크 업데이트 실패:', error);
+                              }
+                            }}
+                            className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                              info.is_completed
+                                ? 'bg-green-500 border-green-500'
+                                : 'border-gray-300 hover:border-green-500'
+                            }`}
+                          >
+                            {info.is_completed && (
+                              <Check className="w-4 h-4 text-white" />
+                            )}
+                          </button>
                         </div>
                       </CardHeader>
+                      
                       <CardContent className="space-y-2">
                         {info.address && (
                           <p className="text-sm text-gray-600">

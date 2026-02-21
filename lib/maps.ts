@@ -1,3 +1,5 @@
+import type { TripInfo, Category } from "@/types/trip";
+
 // 장소명으로 좌표 & 주소 & Place ID 검색
 export async function searchPlace(placeName: string, country?: string) {
   try {
@@ -44,7 +46,7 @@ export async function searchPlace(placeName: string, country?: string) {
     const result = data.results[0];
 
     console.log('✅ 검색 성공:', result.formatted_address);
-    console.log('📍 Place ID:', result.place_id);  // ⭐ 로그 추가
+    console.log('📍 Place ID:', result.place_id);
 
     return {
       address: result.formatted_address,
@@ -52,7 +54,7 @@ export async function searchPlace(placeName: string, country?: string) {
         lat: result.geometry.location.lat,
         lng: result.geometry.location.lng,
       },
-      placeId: result.place_id,  // ⭐ 추가!
+      placeId: result.place_id,
     };
   } catch (error) {
     console.error('💥 Place search error:', error);
@@ -65,7 +67,7 @@ export async function searchPlaceClient(placeName: string, country?: string) {
   try {
     const query = country ? `${placeName}, ${country}` : placeName;
     
-    // ⭐ NEXT_PUBLIC_ 키 사용 (클라이언트용)
+    // NEXT_PUBLIC_ 키 사용 (클라이언트용)
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
@@ -104,7 +106,47 @@ export async function searchPlaceClient(placeName: string, country?: string) {
   }
 }
 
-// Google Maps URL 생성 헬퍼 함수 추가
+// 모든 장소 링크 생성
+export function generateAllPlacesLinks(infos: TripInfo[]): string {
+  let result = '📍 여행 장소 모음\n\n';
+  
+  const categories = {
+    restaurant: '🍽️ 맛집',
+    attraction: '🗼 관광지',
+    accommodation: '🏨 숙소',
+    transport: '🚗 교통',
+    other: '📌 기타',
+  };
+  
+  Object.entries(categories).forEach(([key, label]) => {
+    const categoryInfos = infos.filter(i => i.category === key);
+    
+    if (categoryInfos.length > 0) {
+      result += `${label}\n`;
+      categoryInfos.forEach((info, index) => {
+        const url = getGoogleMapsUrl(
+          info.name,
+          info.place_id,
+          info.latitude,
+          info.longitude
+        );
+        const stars = info.importance > 0 
+          ? ' ' + '⭐'.repeat(info.importance) 
+          : '';
+        const completed = info.is_completed ? ' ✅' : '';
+        
+        result += `${index + 1}. ${info.name}${stars}${completed}\n`;
+        result += `   ${url}\n`;
+      });
+      result += '\n';
+    }
+  });
+  
+  return result;
+}
+
+
+// Google Maps URL 생성 헬퍼 함수
 export function getGoogleMapsUrl(
     placeName?: string | null,
     placeId?: string | null,
