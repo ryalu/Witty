@@ -18,6 +18,9 @@ interface AnalyzedInfo {
   name: string;
   address: string | null;
   description: string | null;
+  memo?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function ReviewPage() {
@@ -69,7 +72,6 @@ export default function ReviewPage() {
     setSaving(true);
 
     try {
-      // 각 정보를 DB에 저장
       for (const info of infos) {
         await createTripInfo({
           trip_id: tripId,
@@ -80,6 +82,8 @@ export default function ReviewPage() {
           memo: null,
           image_url: info.imageUrl,
           order: 0,
+          latitude: info.latitude || null,
+          longitude: info.longitude || null,
         });
       }
 

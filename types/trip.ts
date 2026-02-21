@@ -31,6 +31,17 @@ export interface TripInfo {
   memo: string | null;
   image_url: string | null;
   order: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export type Category = TripInfo['category'];
+
+export interface LocationCoords {
+  lat: number;
+  lng: number;
+}
+
+export interface TripInfoWithCoord extends TripInfo {
+  coords?: LocationCoords;
+}

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { analyzeImage } from '@/lib/ai';
 import { uploadImage } from '@/lib/storage';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
@@ -23,6 +24,8 @@ interface AnalyzedResult {
   name: String;
   address: string | null;
   description: string | null;
+  latitude?: number;
+  longitude?: number;
 }
 
 export default function UploadPage() {
@@ -32,6 +35,22 @@ export default function UploadPage() {
 
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [country, setCountry] = useState<string>('');
+
+  useEffect(() => {
+    async function loadTrip() {
+      const { data } = await supabase
+        .from('trips')
+        .select('country')
+        .eq('id', tripId)
+        .single();
+      
+      if (data) {
+        setCountry(data.country);
+      }
+    }
+    loadTrip();    
+  }, [tripId]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {

@@ -1,8 +1,9 @@
 'use server';
 
 import Anthropic from '@anthropic-ai/sdk';
+import { searchPlace } from './maps';
 
-export async function analyzeImage(imageUrl: string) {
+export async function analyzeImage(imageUrl: string, country?: string) {
   try {
     console.log('🚀 AI 분석 시작:', imageUrl);
 
@@ -56,43 +57,19 @@ export async function analyzeImage(imageUrl: string) {
               type: 'text',
               text: `이 이미지에서 여행 관련 정보를 추출해주세요.
 
-[중요: 이미지에 여러 장소가 있다면 모두 추출해주세요!]
+⭐ 중요: 이미지에 여러 장소가 있으면 모두 추출해주세요!
 
-각 장소마다 다음 정보를 추출:
-- category: "restaurant" | "attraction" | "accommodation" | "transport" | "other"
-- name: 장소 이름
-- address: 주소 (없으면 null)
-- description: 간단한 설명 (영업시간, 가격, 특징 등)
-
-[응답 형식]:
-- 장소가 1개면: [{ 정보 }]
-- 장소가 여러개면: [{ 정보1 }, { 정보2 }, ...]
-
-JSON 배열로만 응답해주세요:
+다음 JSON 배열 형식으로만 응답해주세요:
 [
   {
-    "category": "restaurant",
-    "name": "장소1 이름",
-    "address": "주소1",
-    "description": "설명1"
-  },
-  {
-    "category": "attraction",
-    "name": "장소2 이름",
-    "address": "주소2",
-    "description": "설명2"
+    "category": "restaurant | attraction | accommodation | transport | other",
+    "name": "장소 이름",
+    "address": "주소 (없으면 null)",
+    "description": "설명 (없으면 null)"
   }
 ]
 
-여행 정보가 없으면:
-[
-  {
-    "category": "other",
-    "name": "정보 없음",
-    "address": null,
-    "description": "여행 정보를 찾을 수 없습니다."
-  }
-]`,
+반드시 JSON 배열 형식으로만 응답하세요.`,
             },
           ],
         },
@@ -113,16 +90,45 @@ JSON 배열로만 응답해주세요:
       jsonText = jsonText.replace(/```\n?/g, '');
     }
 
-    const result = JSON.parse(jsonText);
-    
-    // 배열인지 확인, 아니면 배열로 감싸기
-    const results = Array.isArray(result) ? result : [result];
-    
-    console.log('✅ 분석 완료:', results);
+    const results = JSON.parse(jsonText);
+
+    if (!Array.isArray(results)) {
+      console.log('✅ 분석 완료 (단일)');
+      return {
+        success: true,
+        data: [results],
+      };
+    }
+
+    // ⭐ 각 장소에 대해 Google Maps로 주소/좌표 검색
+    console.log('🗺️ 주소 및 좌표 검색 중...');
+    const enhancedResults = await Promise.all(
+      results.map(async (place) => {
+        try {
+          const placeData = await searchPlace(place.name, country);
+
+          if (placeData) {
+            return {
+              ...place,
+              address: place.address || placeData.address,
+              latitude: placeData.coords.lat,
+              longitude: placeData.coords.lng,
+            };
+          }
+
+          return place;
+        } catch (error) {
+          console.error('주소 검색 실패:', place.name, error);
+          return place;
+        }
+      })
+    );
+
+    console.log('✅ 분석 완료 (여러 개):', enhancedResults);
 
     return {
       success: true,
-      data: results,  // 배열로 반환
+      data: enhancedResults,
     };
   } catch (error: any) {
     console.error('💥 에러:', error);

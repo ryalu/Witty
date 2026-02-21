@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, Plus } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, Map } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
+import TripMap from '@/components/trip/TripMap';
 
 export default function TripDetailPage() {
   const params = useParams();
@@ -21,6 +22,7 @@ export default function TripDetailPage() {
   const [infos, setInfos] = useState<TripInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -99,14 +101,37 @@ export default function TripDetailPage() {
         </Card>
 
         {/* 이미지 업로드 버튼 */}
-        <Button
-          size="lg"
-          className="w-full mb-6 h-16 text-lg"
-          onClick={() => router.push(`/trips/${tripId}/upload`)}
-        >
-          <Upload className="w-6 h-6 mr-2" />
-          이미지 업로드하고 정보 추가하기
-        </Button>
+        <div className="flex gap-3 mb-6">
+          <Button
+            size="lg"
+            className="w-full mb-6 h-16 text-lg"
+            onClick={() => router.push(`/trips/${tripId}/upload`)}
+          >
+            <Upload className="w-6 h-6 mr-2" />
+            이미지 업로드하고 정보 추가하기
+          </Button>
+
+          <Button
+              size="lg"
+              variant={showMap ? 'default' : 'outline'}
+              className="h-16"
+              onClick={() => setShowMap(!showMap)}
+            >
+              <Map className="w-6 h-6" />
+            </Button>
+          </div>
+
+          {/* 지도 표시 */}
+          {showMap && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>지도로 보기 🗺️</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TripMap infos={infos} />
+              </CardContent>
+            </Card>
+          )}
 
         {/* 카테고리 탭 */}
         <Card>
