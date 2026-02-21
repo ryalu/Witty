@@ -24,8 +24,9 @@ interface AnalyzedResult {
   name: String;
   address: string | null;
   description: string | null;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  placeId?: string | null;
 }
 
 export default function UploadPage() {
@@ -137,6 +138,7 @@ async function handleUpload() {
           description: place.description,
           latitude: place.latitude,
           longitude: place.longitude,
+          placeId: place.placeId,
         });
       }
 

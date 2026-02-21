@@ -57,7 +57,7 @@ export async function analyzeImage(imageUrl: string, country?: string) {
               type: 'text',
               text: `이 이미지에서 여행 관련 정보를 추출해주세요.
 
-⭐ 중요: 이미지에 여러 장소가 있으면 모두 추출해주세요!
+중요: 이미지에 여러 장소가 있으면 모두 추출해주세요!
 
 다음 JSON 배열 형식으로만 응답해주세요:
 [
@@ -102,18 +102,30 @@ export async function analyzeImage(imageUrl: string, country?: string) {
 
     // 각 장소에 대해 Google Maps로 주소/좌표 검색
     console.log('🗺️ 주소 및 좌표 검색 중...');
+    console.log('검색할 장소 개수:', results.length);
+    console.log('국가 정보:', country);
+
     const enhancedResults = await Promise.all(
       results.map(async (place) => {
         try {
+          console.log(`\n[$index + 1]/${results.length}] 검색 중: ${place.name}`);
+
           const placeData = await searchPlace(place.name, country);
 
+          console.log('검색 결과:', placeData);
+
           if (placeData) {
+            console.log(`좌표 찾음: ${placeData.coords.lat}, ${placeData.coords.lng}`);
+            console.log(`Place ID: ${placeData.placeId}`);
             return {
               ...place,
               address: place.address || placeData.address,
               latitude: placeData.coords.lat,
               longitude: placeData.coords.lng,
+              placeId: placeData.placeId,
             };
+          } else {
+            console.log(`좌표 못 찾음: ${place.name}`);
           }
 
           return place;

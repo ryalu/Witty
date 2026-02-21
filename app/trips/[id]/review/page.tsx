@@ -21,6 +21,7 @@ interface AnalyzedInfo {
   memo?: string;
   latitude?: number | null;
   longitude?: number | null;
+  place_id?: string | null;
 }
 
 export default function ReviewPage() {
@@ -81,6 +82,7 @@ export default function ReviewPage() {
           order: 0,
           latitude: info.latitude || null,
           longitude: info.longitude || null,
+          place_id: info.place_id || null,
         });
       }
 

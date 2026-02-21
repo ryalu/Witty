@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { GoogleMap, useLoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 import type { TripInfo, Category } from '@/types/trip';
 import { CATEGORIES } from '@/constants/categories';
+import { getGoogleMapsUrl } from '@/lib/maps';
 
 interface TripMapProps {
   infos: TripInfo[];
@@ -20,7 +21,7 @@ const MARKER_COLORS = {
 export default function TripMap({ infos }: TripMapProps) {
   const [selectedInfo, setSelectedInfo] = useState<TripInfo | null>(null);
 
-  // ⭐ LoadScript 대신 useLoadScript 사용
+  // LoadScript 대신 useLoadScript 사용
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
   });
@@ -58,7 +59,7 @@ export default function TripMap({ infos }: TripMapProps) {
     fullscreenControl: true,
   };
 
-  // ⭐ 로딩 에러
+  // 로딩 에러
   if (loadError) {
     return (
       <div className="bg-red-100 rounded-lg p-12 text-center">
@@ -70,7 +71,7 @@ export default function TripMap({ infos }: TripMapProps) {
     );
   }
 
-  // ⭐ 로딩 중
+  // 로딩 중
   if (!isLoaded) {
     return (
       <div className="bg-gray-100 rounded-lg p-12 text-center">
@@ -79,7 +80,7 @@ export default function TripMap({ infos }: TripMapProps) {
     );
   }
 
-  // ⭐ 좌표 없음
+  // 좌표 없음
   if (validInfos.length === 0) {
     return (
       <div className="bg-gray-100 rounded-lg p-12 text-center">
@@ -145,6 +146,38 @@ export default function TripMap({ infos }: TripMapProps) {
                 {selectedInfo.description.length > 100 && '...'}
               </p>
             )}
+
+            {/* Google Maps 버튼 */}
+            {(selectedInfo.place_id || (selectedInfo.latitude && selectedInfo.longitude)) && (
+                <button
+                onClick={() => {
+                    const url = getGoogleMapsUrl(
+                    selectedInfo.name,
+                    selectedInfo.place_id, 
+                    selectedInfo.latitude, 
+                    selectedInfo.longitude
+                    );
+                    window.open(url, '_blank');
+                }}
+                className="w-full mt-2 px-3 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-1"
+                >
+                <svg 
+                    className="w-3 h-3" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                >
+                    <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
+                    />
+                </svg>
+                Google Maps에서 보기
+                </button>
+            )}
+
           </div>
         </InfoWindow>
       )}

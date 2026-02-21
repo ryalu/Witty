@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { searchPlaceClient, getGoogleMapsUrl } from '@/lib/maps';
 import type { TripInfo, Category } from '@/types/trip';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Search, MapPin, ExternalLink } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
 
 export default function EditInfoPage() {
@@ -22,6 +23,7 @@ export default function EditInfoPage() {
   const [info, setInfo] = useState<TripInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     loadInfo();
@@ -46,6 +48,52 @@ export default function EditInfoPage() {
     }
   }
 
+  // 위치 재검색
+  async function handleSearchLocation() {
+    if (!info || !info.name.trim()) {
+      alert('장소 이름을 먼저 입력해주세요.');
+      return;
+    }
+
+    setSearching(true);
+
+    try {
+      // 여행 국가 정보 가져오기
+      const { data: tripData } = await supabase
+        .from('trips')
+        .select('country')
+        .eq('id', tripId)
+        .single();
+
+      const country = tripData?.country;
+
+      console.log('🔍 위치 검색 중:', info.name, country);
+
+      const result = await searchPlaceClient(info.name, country);
+
+      if (result) {
+        console.log('✅ 검색 성공:', result);
+        
+        setInfo({
+          ...info,
+          address: result.address,
+          latitude: result.coords.lat,
+          longitude: result.coords.lng,
+          place_id: result.placeId,
+        });
+
+        alert('✅ 위치를 찾았어요!\n저장 버튼을 눌러 적용하세요.');
+      } else {
+        alert('❌ 위치를 찾을 수 없습니다.\n장소명을 더 정확하게 입력해보세요.');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('검색 중 오류가 발생했습니다.');
+    } finally {
+      setSearching(false);
+    }
+  }
+
   async function handleSave() {
     if (!info) return;
 
@@ -60,12 +108,15 @@ export default function EditInfoPage() {
           address: info.address,
           description: info.description,
           memo: info.memo,
+          latitude: info.latitude,
+          longitude: info.longitude,
+          place_id: info.place_id,
         })
         .eq('id', infoId);
 
       if (error) throw error;
 
-      alert('저장 완료! ✅');
+      alert('저장 완료!');
       router.push(`/trips/${tripId}`);
     } catch (error) {
       console.error('Save error:', error);
@@ -86,7 +137,7 @@ export default function EditInfoPage() {
 
       if (error) throw error;
 
-      alert('삭제 완료! 🗑️');
+      alert('삭제 완료');
       router.push(`/trips/${tripId}`);
     } catch (error) {
       console.error('Delete error:', error);
@@ -137,6 +188,25 @@ export default function EditInfoPage() {
               />
             )}
 
+            {/* Google Maps 버튼 */}
+            {(info.place_id || (info.latitude && info.longitude)) && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const url = getGoogleMapsUrl(
+                    info.name,
+                    info.place_id,
+                    info.latitude,
+                    info.longitude);
+                  window.open(url, '_blank');
+                }}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Google Maps에서 보기
+              </Button>
+            )}
+
             {/* 카테고리 */}
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -161,16 +231,38 @@ export default function EditInfoPage() {
               </Select>
             </div>
 
-            {/* 이름 */}
+            {/* 이름 + 재검색 버튼 */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 장소/가게 이름 *
               </label>
-              <Input
-                value={info.name}
-                onChange={(e) => setInfo({ ...info, name: e.target.value })}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={info.name}
+                  onChange={(e) => setInfo({ ...info, name: e.target.value })}
+                  required
+                  className="flex-1"
+                  placeholder="예: Chamcha Market"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSearchLocation}
+                  disabled={searching || !info.name.trim()}
+                >
+                  {searching ? (
+                    <>검색 중...</>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" />
+                      위치 찾기
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 장소명을 수정했다면 "위치 찾기"를 눌러 정확한 위치를 검색하세요
+              </p>
             </div>
 
             {/* 주소 */}
@@ -181,6 +273,18 @@ export default function EditInfoPage() {
                 onChange={(e) => setInfo({ ...info, address: e.target.value })}
                 placeholder="주소 (선택사항)"
               />
+              {/* 위치 정보 표시 */}
+              {info.latitude && info.longitude && (
+                <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
+                  <MapPin className="w-3 h-3" />
+                  <span>
+                    위치: {info.latitude.toFixed(4)}, {info.longitude.toFixed(4)}
+                  </span>
+                  {info.place_id && (
+                    <span className="text-blue-600">• Place ID 있음</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 설명 */}

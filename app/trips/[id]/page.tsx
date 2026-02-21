@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, Plus, Map } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, Map, ExternalLink } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
+import { getGoogleMapsUrl } from '@/lib/maps';
 import TripMap from '@/components/trip/TripMap';
 
 export default function TripDetailPage() {
@@ -209,6 +210,27 @@ export default function TripDetailPage() {
                             alt={info.name}
                             className="w-full h-48 object-cover rounded mt-2"
                           />
+                        )}
+
+                        {/* Google Maps 버튼 */}
+                        {(info.place_id || (info.latitude && info.longitude)) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const url = getGoogleMapsUrl(
+                                info.name,
+                                info.place_id,
+                                info.latitude,
+                                info.longitude);
+                              window.open(url, '_blank');
+                            }}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Google Maps에서 보기
+                          </Button>
                         )}
                       </CardContent>
                     </Card>

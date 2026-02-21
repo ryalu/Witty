@@ -33,6 +33,7 @@ export interface TripInfo {
   order: number;
   latitude: number | null;
   longitude: number | null;
+  place_id: string | null;
 }
 
 export type Category = TripInfo['category'];
