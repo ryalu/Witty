@@ -10,7 +10,7 @@ export default function Navbar() {
   const router = useRouter();
 
   return (
-    <nav className="bg-white dark:bg-gray-900/95 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+    <nav className="bg-[#DFF4FC]/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-blue-200/50 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex items-center justify-between h-[64px]">
           {/* 로고 (홈 버튼) */}
@@ -25,7 +25,7 @@ export default function Navbar() {
               height={40}
               className="drop-shadow-sm"
             />
-            <span className="text-xl font-bold text-gray-400 dark:from-blue-400 dark:to-indigo-400">
+            <span className="text-xl font-bold text-gray-700 dark:from-blue-400 dark:to-indigo-400">
               Witty
             </span>
           </button>

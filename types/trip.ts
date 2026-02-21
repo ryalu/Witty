@@ -31,6 +31,7 @@ export interface TripInfo {
   description: string | null;
   memo: string | null;
   image_url: string | null;
+  images?: string[] | null;
   order: number;
   latitude: number | null;
   longitude: number | null;

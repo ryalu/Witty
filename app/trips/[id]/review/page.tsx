@@ -79,6 +79,7 @@ export default function ReviewPage() {
           description: info.description,
           memo: info.memo || null,
           image_url: info.imageUrl,
+          images: [info.imageUrl],
           order: 0,
           latitude: info.latitude || null,
           longitude: info.longitude || null,

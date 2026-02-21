@@ -20,6 +20,7 @@ interface UploadedImage {
 
 interface AnalyzedResult {
   imageUrl: string;
+  images?: string[];
   category: Category;
   name: String;
   address: string | null;

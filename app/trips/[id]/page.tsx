@@ -56,6 +56,9 @@ function InfoCard({
   onOpenMaps: (info: TripInfo) => void;
 }) {
   const router = useRouter();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const images = info.images || (info.image_url ? [info.image_url] : []);
 
   return (
     <Card 
@@ -113,13 +116,70 @@ function InfoCard({
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col overflow-hidden">
-        {/* 이미지 */}
-        {info.image_url && (
-          <img
-            src={info.image_url}
-            alt={info.name}
-            className="w-full h-32 object-cover rounded mb-2"
-          />
+        {/* 이미지 갤러리 */}
+        {images.length > 0 && (
+          <div className="relative w-full h-32 mb-2">
+            <img
+              src={images[currentImageIndex]}
+              alt={info.name}
+              className="w-full h-full object-cover rounded"
+            />
+            
+            {/* 이미지 여러 장일 때 네비게이션 */}
+            {images.length > 1 && (
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(idx);
+                    }}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      idx === currentImageIndex 
+                        ? 'bg-white w-4' 
+                        : 'bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* 이전/다음 버튼 */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex((prev) => 
+                      prev === 0 ? images.length - 1 : prev - 1
+                    );
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70"
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex((prev) => 
+                      prev === images.length - 1 ? 0 : prev + 1
+                    );
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70"
+                >
+                  ›
+                </button>
+              </>
+            )}
+
+            {/* 이미지 개수 표시 */}
+            {images.length > 1 && (
+              <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 text-white text-xs rounded">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            )}
+          </div>
         )}
 
         {/* 내용 (스크롤 가능) */}
