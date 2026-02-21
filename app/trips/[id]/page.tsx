@@ -104,34 +104,41 @@ export default function TripDetailPage() {
         <div className="flex gap-3 mb-6">
           <Button
             size="lg"
-            className="w-full mb-6 h-16 text-lg"
+            className="flex-1 h-16 text-lg"
             onClick={() => router.push(`/trips/${tripId}/upload`)}
           >
             <Upload className="w-6 h-6 mr-2" />
             이미지 업로드하고 정보 추가하기
           </Button>
 
+          {/* 지도 버튼(디버깅 추가) */}
           <Button
-              size="lg"
-              variant={showMap ? 'default' : 'outline'}
-              className="h-16"
-              onClick={() => setShowMap(!showMap)}
-            >
-              <Map className="w-6 h-6" />
-            </Button>
-          </div>
+            size="lg"
+            variant={showMap ? 'default' : 'outline'}
+            className="h-16"
+            onClick={() => {
+              console.log('지도 버튼 클릭!');
+              console.log('현재 showMap:', showMap);
+              console.log('infos 개수:', infos.length);
+              console.log('좌표 있는 infos:', infos.filter(i => i.latitude && i.longitude).length);
+              setShowMap(!showMap);
+            }}
+          >
+            <Map className="w-6 h-6" />
+          </Button>
+        </div>
 
-          {/* 지도 표시 */}
-          {showMap && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>지도로 보기 🗺️</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TripMap infos={infos} />
-              </CardContent>
-            </Card>
-          )}
+        {/* 지도 표시 */}
+        {showMap && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>지도로 보기 🗺️</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TripMap infos={infos} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* 카테고리 탭 */}
         <Card>

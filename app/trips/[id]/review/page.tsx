@@ -33,14 +33,12 @@ export default function ReviewPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // URL 파라미터에서 데이터 가져오기
     const dataParam = searchParams.get('data');
 
     if (dataParam) {
       try {
         const decoded = decodeURIComponent(dataParam);
         const data = JSON.parse(decoded);
-        console.log('URL에서 데이터 받음:', data);
         setInfos(data);
       } catch (error) {
         console.error('데이터 파싱 실패:', error);
@@ -48,11 +46,10 @@ export default function ReviewPage() {
         router.push(`/trips/${tripId}`);
       }
     } else {
-      // localStorage에서 확인(백업)
       const stored = localStorage.getItem('analyzedResults');
       if (stored) {
         setInfos(JSON.parse(stored));
-        localStorage.removeItem('analyzedResults'); // 사용 후 삭제
+        localStorage.removeItem('analyzedResults');
       } else {
         alert('분석 결과가 없습니다.');
         router.push(`/trips/${tripId}`);
@@ -79,7 +76,7 @@ export default function ReviewPage() {
           name: info.name,
           address: info.address,
           description: info.description,
-          memo: null,
+          memo: info.memo || null,
           image_url: info.imageUrl,
           order: 0,
           latitude: info.latitude || null,
@@ -108,7 +105,6 @@ export default function ReviewPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* 헤더 */}
         <Button
           variant="ghost"
           onClick={() => router.push(`/trips/${tripId}`)}
@@ -127,7 +123,6 @@ export default function ReviewPage() {
           </CardHeader>
         </Card>
 
-        {/* 분석 결과 카드들 */}
         <div className="space-y-6">
           {infos.map((info, index) => (
             <Card key={index}>
@@ -138,14 +133,14 @@ export default function ReviewPage() {
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* 이미지 */}
-                <img
-                  src={info.imageUrl}
-                  alt={`분석 ${index + 1}`}
-                  className="w-full h-48 object-cover rounded"
-                />
+                {info.imageUrl && (
+                  <img
+                    src={info.imageUrl}
+                    alt={`분석 ${index + 1}`}
+                    className="w-full h-48 object-cover rounded"
+                  />
+                )}
 
-                {/* 이름 */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     장소/가게 이름
@@ -156,11 +151,8 @@ export default function ReviewPage() {
                   />
                 </div>
 
-                {/* 주소 */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    주소
-                  </label>
+                  <label className="block text-sm font-medium mb-2">주소</label>
                   <Input
                     value={info.address || ''}
                     onChange={(e) =>
@@ -168,13 +160,15 @@ export default function ReviewPage() {
                     }
                     placeholder="주소 (선택사항)"
                   />
+                  {info.latitude && info.longitude && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ 위치 정보 자동 추가됨 ({info.latitude.toFixed(4)}, {info.longitude.toFixed(4)})
+                    </p>
+                  )}
                 </div>
 
-                {/* 설명 */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    설명
-                  </label>
+                  <label className="block text-sm font-medium mb-2">설명</label>
                   <Textarea
                     value={info.description || ''}
                     onChange={(e) =>
@@ -184,12 +178,24 @@ export default function ReviewPage() {
                     rows={3}
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    💭 내 메모
+                  </label>
+                  <Textarea
+                    value={info.memo || ''}
+                    onChange={(e) => updateInfo(index, 'memo', e.target.value)}
+                    placeholder="여기 꼭 가보기!, 예약 완료, 친구 추천 등"
+                    rows={2}
+                    className="bg-yellow-50 border-yellow-200"
+                  />
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* 저장 버튼 */}
         <Button
           onClick={handleSave}
           disabled={saving}

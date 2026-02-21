@@ -140,6 +140,8 @@ async function handleUpload() {
         });
       }
 
+      console.log('최종 analyzedResults:', analyzedResults);
+
       setImages((prev) => {
         const updated = [...prev];
         updated[i].uploading = false;
