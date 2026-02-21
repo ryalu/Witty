@@ -100,7 +100,7 @@ export async function analyzeImage(imageUrl: string, country?: string) {
       };
     }
 
-    // ⭐ 각 장소에 대해 Google Maps로 주소/좌표 검색
+    // 각 장소에 대해 Google Maps로 주소/좌표 검색
     console.log('🗺️ 주소 및 좌표 검색 중...');
     const enhancedResults = await Promise.all(
       results.map(async (place) => {

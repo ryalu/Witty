@@ -127,7 +127,7 @@ async function handleUpload() {
 
       console.log(`AI 분석 결과: ${analyzeResult.data.length}개 발견`);
 
-      // ⭐ 배열로 받은 결과 모두 추가
+      // 배열로 받은 결과 모두 추가
       for (const place of analyzeResult.data) {
         analyzedResults.push({
           imageUrl: url,
@@ -135,6 +135,8 @@ async function handleUpload() {
           name: place.name,
           address: place.address,
           description: place.description,
+          latitude: place.latitude,
+          longitude: place.longitude,
         });
       }
 
