@@ -1,198 +1,174 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useDropzone } from 'react-dropzone';
-import { analyzeImage } from '@/lib/ai';
-import { uploadImage } from '@/lib/storage';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
-import { Category } from '@/types/trip';
-
-interface UploadedImage {
-  file: File;
-  preview: string;
-  url?: string;
-  uploading: boolean;
-}
-
-interface AnalyzedResult {
-  imageUrl: string;
-  images?: string[];
-  category: Category;
-  name: String;
-  address: string | null;
-  description: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  placeId?: string | null;
-}
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Upload, Sparkles, Link as LinkIcon, X } from 'lucide-react';
 
 export default function UploadPage() {
   const params = useParams();
   const router = useRouter();
   const tripId = params.id as string;
 
-  const [images, setImages] = useState<UploadedImage[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [country, setCountry] = useState<string>('');
+  // 파일 업로드용 상태
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  
+  // URL 입력용 상태
+  const [imageUrls, setImageUrls] = useState('');
+  
+  // 공통 상태
+  const [analyzing, setAnalyzing] = useState(false);
+  const [uploadMethod, setUploadMethod] = useState<'file' | 'url'>('file');
 
-  useEffect(() => {
-    async function loadTrip() {
-      const { data } = await supabase
-        .from('trips')
-        .select('country')
-        .eq('id', tripId)
-        .single();
-      
-      if (data) {
-        setCountry(data.country);
-      }
+  // 파일 선택
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (files) {
+      setSelectedFiles(Array.from(files));
     }
-    loadTrip();    
-  }, [tripId]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
-    },
-    onDrop: (acceptedFiles) => {
-      const newImages = acceptedFiles.map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-        uploading: false,
-      }));
-      setImages((prev) => [...prev, ...newImages]);
-    },
-  });
-
-  function removeImage(index: number) {
-    setImages((prev) => {
-      const newImages = [...prev];
-      URL.revokeObjectURL(newImages[index].preview);
-      newImages.splice(index, 1);
-      return newImages;
-    });
   }
 
-async function handleUpload() {
-  if (images.length === 0) {
-    alert('이미지를 먼저 선택해주세요!');
-    return;
+  // 파일 제거
+  function removeFile(index: number) {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   }
 
-  setUploading(true);
-
-  try {
-    const analyzedResults: AnalyzedResult[] = [];
-
-    for (let i = 0; i < images.length; i++) {
-      console.log(`=== 이미지 ${i + 1} 처리 시작 ===`);
-
-      setImages((prev) => {
-        const updated = [...prev];
-        updated[i].uploading = true;
-        return updated;
-      });
-
-      // 1. 이미지 업로드
-      console.log('1. Supabase에 업로드 중...');
-      const url = await uploadImage(images[i].file);
-      console.log('업로드 완료:', url);
-
-      setImages((prev) => {
-        const updated = [...prev];
-        updated[i].url = url;
-        return updated;
-      });
-
-      // 2. AI 분석
-      console.log('2. AI 분석 시작...');
-      const analyzeResult = await analyzeImage(url);
-
-      if (!analyzeResult.success) {
-        throw new Error(analyzeResult.error || 'AI 분석 실패');
-      }
-
-      if (!analyzeResult.data || analyzeResult.data.length === 0) {
-        console.log('⚠️ 이미지에서 여행 정보를 찾을 수 없습니다.');
-        // 빈 배열이면 건너뛰기
-        setImages((prev) => {
-          const updated = [...prev];
-          updated[i].uploading = false;
-          return updated;
-        });
-        continue;
-      }
-
-      console.log(`AI 분석 결과: ${analyzeResult.data.length}개 발견`);
-
-      // 배열로 받은 결과 모두 추가
-      for (const place of analyzeResult.data) {
-        analyzedResults.push({
-          imageUrl: url,
-          category: place.category as Category,
-          name: place.name,
-          address: place.address,
-          description: place.description,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          placeId: place.placeId,
-        });
-      }
-
-      console.log('최종 analyzedResults:', analyzedResults);
-
-      setImages((prev) => {
-        const updated = [...prev];
-        updated[i].uploading = false;
-        return updated;
-      });
-
-      console.log(`=== 이미지 ${i + 1} 처리 완료 ===`);
-    }
-
-    if (analyzedResults.length === 0) {
-      alert('이미지에서 여행 정보를 찾을 수 없습니다.');
-      setUploading(false);
+  // 파일 업로드 분석
+  async function handleFileAnalyze() {
+    if (selectedFiles.length === 0) {
+      alert('이미지를 선택해주세요!');
       return;
     }
 
-    console.log(`모든 분석 완료: 총 ${analyzedResults.length}개 정보`);
+    setAnalyzing(true);
 
-    // localStorage 저장
     try {
-      localStorage.setItem('analyzedResults', JSON.stringify(analyzedResults));
-      console.log('✅ localStorage 저장 완료');
-    } catch (e) {
-      console.error('❌ localStorage 저장 실패:', e);
-      throw new Error('데이터 저장 실패');
+      const analyzedResults: any[] = [];
+
+      for (const file of selectedFiles) {
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        const response = await fetch('/api/analyze-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 }),
+        });
+
+        if (!response.ok) {
+          console.error('분석 실패:', file.name);
+          continue;
+        }
+
+        const data = await response.json();
+        
+        if (data.locations && data.locations.length > 0) {
+          data.locations.forEach((loc: any) => {
+            analyzedResults.push({
+              imageUrl: base64,
+              ...loc,
+            });
+          });
+        }
+      }
+
+      if (analyzedResults.length === 0) {
+        alert('추출된 정보가 없습니다. 다른 이미지를 시도해보세요.');
+        setAnalyzing(false);
+        return;
+      }
+
+      // 결과를 review 페이지로 전달
+      const encoded = encodeURIComponent(JSON.stringify(analyzedResults));
+      router.push(`/trips/${tripId}/review?data=${encoded}`);
+    } catch (error) {
+      console.error('분석 실패:', error);
+      alert('이미지 분석 중 오류가 발생했습니다.');
+      setAnalyzing(false);
+    }
+  }
+
+  // URL 분석
+  async function handleUrlAnalyze() {
+    const urls = imageUrls
+      .split('\n')
+      .map(url => url.trim())
+      .filter(url => url.length > 0);
+
+    if (urls.length === 0) {
+      alert('URL을 입력해주세요!');
+      return;
     }
 
-    setUploading(false);
+    setAnalyzing(true);
 
-    alert(
-      `${images.length}개 이미지 분석 완료!\n총 ${analyzedResults.length}개 정보를 찾았어요 🎉`
-    );
+    try {
+      const analyzedResults: any[] = [];
 
-    // URL 파라미터로 전달
-    const encodedData = encodeURIComponent(JSON.stringify(analyzedResults));
-    setTimeout(() => {
-      router.push(`/trips/${tripId}/review?data=${encodedData}`);
-    }, 100);
-  } catch (error: any) {
-    console.error('Upload error:', error);
-    alert(`오류: ${error.message}`);
-    setUploading(false);
+      for (const url of urls) {
+        // URL을 base64로 변환
+        const response = await fetch('/api/url-to-base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!response.ok) {
+          console.error(`URL 로드 실패: ${url}`);
+          continue;
+        }
+
+        const { base64 } = await response.json();
+
+        // AI 분석
+        const analyzeResponse = await fetch('/api/analyze-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 }),
+        });
+
+        if (!analyzeResponse.ok) {
+          console.error(`분석 실패: ${url}`);
+          continue;
+        }
+
+        const data = await analyzeResponse.json();
+        
+        if (data.locations && data.locations.length > 0) {
+          data.locations.forEach((loc: any) => {
+            analyzedResults.push({
+              imageUrl: base64,
+              ...loc,
+            });
+          });
+        }
+      }
+
+      if (analyzedResults.length === 0) {
+        alert('추출된 정보가 없습니다. 다른 URL을 시도해보세요.');
+        setAnalyzing(false);
+        return;
+      }
+
+      // 결과를 review 페이지로 전달
+      const encoded = encodeURIComponent(JSON.stringify(analyzedResults));
+      router.push(`/trips/${tripId}/review?data=${encoded}`);
+    } catch (error) {
+      console.error('분석 실패:', error);
+      alert('URL 분석 중 오류가 발생했습니다.');
+      setAnalyzing(false);
+    }
   }
-}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* 헤더 */}
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Button
           variant="ghost"
           onClick={() => router.push(`/trips/${tripId}`)}
@@ -202,97 +178,156 @@ async function handleUpload() {
           뒤로가기
         </Button>
 
-        <Card className="mb-6">
+        <Card className="card-enhanced">
           <CardHeader>
-            <CardTitle className="text-2xl">이미지 업로드 📸</CardTitle>
-            <p className="text-sm text-gray-600">
-              인스타 스크린샷, 블로그 캡처 등을 업로드하면 AI가 자동으로
-              정보를 추출해요!
+            <CardTitle className="text-2xl">이미지 업로드 및 분석 📸</CardTitle>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+              여행 정보가 담긴 이미지를 업로드하면 AI가 자동으로 분석해줘요!
             </p>
           </CardHeader>
           <CardContent>
-            {/* 드래그앤드롭 영역 */}
-            <div
-              {...getRootProps()}
-              className={`
-                border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
-                transition-colors
-                ${
-                  isDragActive
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-blue-400'
-                }
-              `}
-            >
-              <input {...getInputProps()} />
-              <Upload className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              {isDragActive ? (
-                <p className="text-lg text-blue-600">이미지를 놓아주세요!</p>
-              ) : (
-                <>
-                  <p className="text-lg mb-2">
-                    이미지를 드래그하거나 클릭해서 선택하세요
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    PNG, JPG, GIF 등 이미지 파일
-                  </p>
-                </>
-              )}
-            </div>
+            {/* 탭 */}
+            <Tabs value={uploadMethod} onValueChange={(v) => setUploadMethod(v as 'file' | 'url')}>
+              <TabsList className="grid w-full grid-cols-2 mb-6 dark:bg-gray-700">
+                <TabsTrigger value="file" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">
+                  <Upload className="w-4 h-4 mr-2" />
+                  파일 업로드
+                </TabsTrigger>
+                <TabsTrigger value="url" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  URL 입력
+                </TabsTrigger>
+              </TabsList>
 
-            {/* 업로드된 이미지 미리보기 */}
-            {images.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  선택된 이미지 ({images.length}개)
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {images.map((image, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={image.preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                      {image.uploading && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                          <p className="text-white text-sm">
-                            {image.url ? 'AI 분석 중...' : '업로드 중...'}
+              {/* 파일 업로드 탭 */}
+              <TabsContent value="file" className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <Upload className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-lg font-medium mb-2 dark:text-gray-200">
+                      클릭하거나 파일을 드래그하세요
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      여러 장을 한번에 업로드할 수 있어요
+                    </p>
+                  </label>
+                </div>
+
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium dark:text-gray-200">
+                      선택된 파일 ({selectedFiles.length}개):
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedFiles.map((file, idx) => (
+                        <div key={idx} className="relative group">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="w-full h-24 object-cover rounded border dark:border-gray-600"
+                          />
+                          <button
+                            onClick={() => removeFile(idx)}
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+                            {file.name}
                           </p>
                         </div>
-                      )}
-                      {!uploading && (
-                        <button
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 업로드 버튼 */}
-            {images.length > 0 && (
-              <Button
-                onClick={handleUpload}
-                disabled={uploading}
-                size="lg"
-                className="w-full mt-6"
-              >
-                {uploading ? (
-                  '처리 중...'
-                ) : (
-                  <>
-                    <ImageIcon className="w-5 h-5 mr-2" />
-                    {images.length}개 이미지 업로드하고 AI 분석하기
-                  </>
+                  </div>
                 )}
-              </Button>
-            )}
+
+                <Button
+                  onClick={handleFileAnalyze}
+                  disabled={analyzing || selectedFiles.length === 0}
+                  size="lg"
+                  className="w-full"
+                >
+                  {analyzing ? (
+                    <>
+                      <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                      AI 분석 중... ({selectedFiles.length}개)
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      AI로 정보 추출하기
+                    </>
+                  )}
+                </Button>
+              </TabsContent>
+
+              {/* URL 입력 탭 */}
+              <TabsContent value="url" className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-200">
+                    이미지 URL (줄바꿈으로 여러 개 입력 가능)
+                  </label>
+                  <Textarea
+                    value={imageUrls}
+                    onChange={(e) => setImageUrls(e.target.value)}
+                    placeholder={`                 https://example.com/image1.jpg
+                 https://example.com/image2.png
+                 https://example.com/image3.jpeg`}
+                    rows={8}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    💡 인스타그램, 블로그 등의 이미지 URL을 붙여넣으세요
+                  </p>
+                </div>
+
+                {imageUrls.trim() && (
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    {imageUrls.split('\n').filter(url => url.trim()).length}개 URL 입력됨
+                  </p>
+                )}
+
+                <Button
+                  onClick={handleUrlAnalyze}
+                  disabled={analyzing || !imageUrls.trim()}
+                  size="lg"
+                  className="w-full"
+                >
+                  {analyzing ? (
+                    <>
+                      <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                      AI 분석 중...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      AI로 정보 추출하기
+                    </>
+                  )}
+                </Button>
+              </TabsContent>
+            </Tabs>
+
+            {/* 안내사항 */}
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">
+                💡 분석 팁
+              </p>
+              <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                <li>• 텍스트가 선명한 이미지일수록 정확도가 높아요</li>
+                <li>• 한 이미지에 여러 장소가 있어도 모두 추출돼요</li>
+                <li>• 장소명, 주소, 설명이 포함된 스크린샷이 좋아요</li>
+                <li>• URL은 직접 접근 가능한 이미지 링크여야 해요</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>
