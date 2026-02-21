@@ -36,6 +36,7 @@ export interface TripInfo {
   place_id: string | null;
   is_completed: boolean;
   importance: number;
+  day_number: number | null;
 }
 
 export type Category = TripInfo['category'];

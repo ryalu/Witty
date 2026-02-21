@@ -113,6 +113,7 @@ export default function EditInfoPage() {
           place_id: info.place_id,
           importance: info.importance,
           is_completed: info.is_completed,
+          day_number: info.day_number,
         })
         .eq('id', infoId);
 
@@ -280,6 +281,43 @@ export default function EditInfoPage() {
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 💡 꼭 가야 할 곳은 별표로 표시하세요
+              </p>
+            </div>
+
+            {/* Day 선택 */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                여행 일자 (Day)
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setInfo({ ...info, day_number: null })}
+                  className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                    info.day_number === null
+                      ? 'border-blue-400 bg-blue-50'
+                      : 'border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  미정
+                </button>
+                {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => setInfo({ ...info, day_number: day })}
+                    className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                      info.day_number === day
+                        ? 'border-blue-400 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    Day {day}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 여행 일자별로 장소를 구분하세요
               </p>
             </div>
 

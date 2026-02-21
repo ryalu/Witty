@@ -85,6 +85,7 @@ export default function ReviewPage() {
           place_id: info.place_id || null,
           is_completed: false,
           importance: 0,
+          day_number: null,
         });
       }
 
