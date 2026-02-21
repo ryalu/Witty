@@ -60,7 +60,7 @@ function InfoCard({
   return (
     <Card 
       className={`card-enhanced-clickable h-[400px] flex flex-col ${
-        info.is_completed ? 'opacity-60 bg-gray-50' : ''
+        info.is_completed ? 'opacity-60 bg-gray-50 dark:bg-gray-800' : ''
       }`}
       onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
     >
@@ -125,14 +125,14 @@ function InfoCard({
         {/* 내용 (스크롤 가능) */}
         <div className="flex-1 overflow-y-auto space-y-2">
           {info.address && (
-            <p className="text-sm text-gray-600 line-clamp-2">📍 {info.address}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">📍 {info.address}</p>
           )}
           {info.description && (
-            <p className="text-sm text-gray-700 line-clamp-3">{info.description}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-3">{info.description}</p>
           )}
           {info.memo && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
-              <p className="text-sm line-clamp-2">📝 {info.memo}</p>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2">
+              <p className="text-sm text-gray-800 dark:text-yellow-200 line-clamp-2">📝 {info.memo}</p>
             </div>
           )}
         </div>
@@ -142,7 +142,7 @@ function InfoCard({
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-2"
+            className="w-full mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
             onClick={(e) => {
               e.stopPropagation();
               onOpenMaps(info);
@@ -251,7 +251,7 @@ function SortableCompactCard({
               </h3>
               
               {info.address && (
-                <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-300 line-clamp-1 mt-0.5">
                   📍 {info.address}
                 </p>
               )}
@@ -291,7 +291,7 @@ export default function TripDetailPage() {
   const [showMap, setShowMap] = useState(false);
   const [completionFilter, setCompletionFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [selectedDay, setSelectedDay] = useState<number | null | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'card' | 'compact'>('compact');
+  const [viewMode, setViewMode] = useState<'card' | 'compact'>('card');
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -440,7 +440,7 @@ export default function TripDetailPage() {
 
   // ==================== 렌더링 ====================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* 헤더 */}
         <Button
@@ -471,7 +471,7 @@ export default function TripDetailPage() {
         <div className="flex gap-3 mb-6">
           <Button
             size="lg"
-            className="flex-1 h-[64px] text-lg"
+            className="flex-1 h-[64px] text-lg dark:bg-indigo-700 dark:hover:bg-blue-700"
             onClick={() => router.push(`/trips/${tripId}/upload`)}
           >
             <Upload className="w-6 h-6 mr-2" />
@@ -481,7 +481,7 @@ export default function TripDetailPage() {
           <Button
             size="lg"
             variant={showMap ? 'default' : 'outline'}
-            className="h-[64px]"
+            className="h-[64px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             onClick={() => setShowMap(!showMap)}
           >
             <Map className="w-6 h-6" />
@@ -491,7 +491,7 @@ export default function TripDetailPage() {
             <Button
               size="lg"
               variant="outline"
-              className="h-[64px]"
+              className="h-[64px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               onClick={() => {
                 const links = generateAllPlacesLinks(infos);
                 navigator.clipboard.writeText(links);
@@ -521,6 +521,10 @@ export default function TripDetailPage() {
             variant={completionFilter === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCompletionFilter('all')}
+            className={completionFilter === 'all' 
+              ? '' 
+              : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+            }
           >
             전체 ({infos.length})
           </Button>
@@ -528,6 +532,10 @@ export default function TripDetailPage() {
             variant={completionFilter === 'pending' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCompletionFilter('pending')}
+            className={completionFilter === 'all' 
+              ? '' 
+              : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+            }
           >
             미방문 ({infos.filter(i => !i.is_completed).length})
           </Button>
@@ -535,6 +543,10 @@ export default function TripDetailPage() {
             variant={completionFilter === 'completed' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setCompletionFilter('completed')}
+            className={completionFilter === 'all' 
+              ? '' 
+              : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+            }
           >
             완료 ({infos.filter(i => i.is_completed).length})
           </Button>
@@ -546,13 +558,21 @@ export default function TripDetailPage() {
             variant={selectedDay === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedDay('all')}
-          >
+            className={selectedDay === 'all' 
+              ? '' 
+              : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500 dark:hover:bg-gray-600'
+            }
+          >     
             전체 Day
           </Button>
           <Button
             variant={selectedDay === null ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedDay(null)}
+            className={selectedDay === 'all' 
+              ? '' 
+              : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500 dark:hover:bg-gray-600'
+            }
           >
             미정 ({infos.filter(i => i.day_number === null).length})
           </Button>
@@ -564,7 +584,11 @@ export default function TripDetailPage() {
                 variant={selectedDay === day ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedDay(day)}
-              >
+                className={selectedDay === 'all' 
+                  ? '' 
+                  : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500 dark:hover:bg-gray-600'
+                }
+              >  
                 Day {day} ({infos.filter(i => i.day_number === day).length})
               </Button>
             ))}
@@ -574,11 +598,12 @@ export default function TripDetailPage() {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">여행 정보</h3>
           
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <Button
               variant={viewMode === 'card' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('card')}
+              className="dark:text-gray-500"
             >
               <LayoutGrid className="w-4 h-4" />
             </Button>
@@ -586,6 +611,7 @@ export default function TripDetailPage() {
               variant={viewMode === 'compact' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('compact')}
+              className="dark:text-gray-500"
             >
               <List className="w-4 h-4" />
             </Button>
@@ -599,13 +625,13 @@ export default function TripDetailPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-              <TabsList className="w-full grid grid-cols-6 mb-4">
-                <TabsTrigger value="all">전체</TabsTrigger>
-                <TabsTrigger value="restaurant">🍽️</TabsTrigger>
-                <TabsTrigger value="attraction">🗼</TabsTrigger>
-                <TabsTrigger value="accommodation">🏨</TabsTrigger>
-                <TabsTrigger value="transport">🚗</TabsTrigger>
-                <TabsTrigger value="other">📌</TabsTrigger>
+              <TabsList className="w-full grid grid-cols-6 mb-4 dark:bg-gray-700">
+                <TabsTrigger value="all" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">전체</TabsTrigger>
+                <TabsTrigger value="restaurant" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">🍽️</TabsTrigger>
+                <TabsTrigger value="attraction" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">🗼</TabsTrigger>
+                <TabsTrigger value="accommodation" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">🏨</TabsTrigger>
+                <TabsTrigger value="transport" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">🚗</TabsTrigger>
+                <TabsTrigger value="other" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">📌</TabsTrigger>
               </TabsList>
 
               <TabsContent value={selectedCategory} className="space-y-4">

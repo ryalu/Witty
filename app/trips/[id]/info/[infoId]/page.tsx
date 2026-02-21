@@ -165,7 +165,7 @@ export default function EditInfoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* 헤더 */}
         <Button
@@ -247,14 +247,14 @@ export default function EditInfoPage() {
                     onClick={() => setInfo({ ...info, importance: level })}
                     className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                       info.importance === level
-                        ? 'border-yellow-400 bg-yellow-50'
-                        : 'border-gray-200 hover:border-yellow-300'
+                        ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-600'
+                        : 'border-gray-200 hover:border-yellow-300 dark:hover:border-yellow-500 dark:bg-gray-700'
                     }`}
                   >
                     <div className="flex flex-col items-center gap-1">
                       <div className="flex gap-0.5">
                         {level === 0 ? (
-                          <span className="text-sm text-gray-500">없음</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">없음</span>
                         ) : (
                           Array.from({ length: level }).map((_, i) => (
                             <Star
@@ -262,14 +262,14 @@ export default function EditInfoPage() {
                               className={`w-5 h-5 ${
                                 info.importance === level
                                   ? 'fill-yellow-400 text-yellow-400'
-                                  : 'fill-gray-300 text-gray-300'
+                                  : 'fill-gray-300 text-gray-300 dark:fill-gray-500 dark:text-gray-500'
                               }`}
                             />
                           ))
                         )}
                       </div>
                       {level > 0 && (
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-gray-600 dark:text-gray-300">
                           {level === 1 && '보통'}
                           {level === 2 && '중요'}
                           {level === 3 && '필수'}
@@ -295,8 +295,8 @@ export default function EditInfoPage() {
                   onClick={() => setInfo({ ...info, day_number: null })}
                   className={`px-4 py-2 rounded-lg border-2 transition-all ${
                     info.day_number === null
-                      ? 'border-blue-400 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
+                      ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-300'
+                      : 'border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:border-blue-300'
                   }`}
                 >
                   미정
@@ -308,8 +308,8 @@ export default function EditInfoPage() {
                     onClick={() => setInfo({ ...info, day_number: day })}
                     className={`px-4 py-2 rounded-lg border-2 transition-all ${
                       info.day_number === day
-                        ? 'border-blue-400 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-300'
+                        ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-300'
+                        : 'border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:border-blue-300'
                     }`}
                   >
                     Day {day}

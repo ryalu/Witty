@@ -108,15 +108,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#DFF4FC] to-white dark:from-gray-900 dark:to-gray-800">
       {/* 간단한 인사 */}
       <div className="container mx-auto px-4 pt-8 max-w-4xl">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold text-gray-600 mb-2 dark:from-gray-300 dark:to-indigo-100">
               내 여행 계획 ✈️
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               AI가 자동으로 정리해주는 스마트 여행 플래너
             </p>
           </div>
@@ -137,21 +137,22 @@ export default function HomePage() {
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
           {/* 탭 헤더 + 뷰 모드 토글 */}
           <div className="flex justify-between items-center mb-6">
-            <TabsList className="grid w-auto grid-cols-2">
-              <TabsTrigger value="active">
+            <TabsList className="grid w-auto grid-cols-2 dark:bg-gray-700">
+              <TabsTrigger value="active" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">
                 진행 중 ({activeTrips.length})
               </TabsTrigger>
-              <TabsTrigger value="completed">
+              <TabsTrigger value="completed" className="dark:data-[state=active]:bg-gray-600 dark:text-gray-300">
                 완료됨 ({completedTrips.length})
               </TabsTrigger>
             </TabsList>
 
             {/* 뷰 모드 버튼 */}
-            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
+                className="dark:text-gray-500"
               >
                 <LayoutGrid className="w-4 h-4" />
               </Button>
@@ -159,6 +160,7 @@ export default function HomePage() {
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
+                className="dark:text-gray-500"
               >
                 <List className="w-4 h-4" />
               </Button>
@@ -200,18 +202,18 @@ export default function HomePage() {
                       // 그리드 카드
                       <Card className="card-enhanced-clickable group">
                         <CardHeader onClick={() => router.push(`/trips/${trip.id}`)}>
-                          <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors">
+                          <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors dark:text-white">
                             {trip.name}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-2 mb-4">
-                            <p className="flex items-center text-gray-600">
+                          <div className="space-y-2 mb-4 h-[100px]">
+                            <p className="flex items-center text-gray-600 dark:text-gray-300">
                               <MapPin className="w-4 h-4 mr-2" />
                               {trip.country}
                             </p>
                             {trip.start_date && trip.end_date && (
-                              <p className="flex items-center text-sm text-gray-500">
+                              <p className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                 <Calendar className="w-4 h-4 mr-2" />
                                 {trip.start_date} ~ {trip.end_date}
                               </p>
@@ -233,6 +235,7 @@ export default function HomePage() {
                                 e.stopPropagation();
                                 toggleArchive(trip);
                               }}
+                              className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                             >
                               <Check className="w-4 h-4" />
                             </Button>
@@ -243,6 +246,7 @@ export default function HomePage() {
                                 e.stopPropagation();
                                 deleteTrip(trip.id, trip.name);
                               }}
+                              className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -281,6 +285,7 @@ export default function HomePage() {
                                   e.stopPropagation();
                                   toggleArchive(trip);
                                 }}
+                                className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                               >
                                 <Check className="w-4 h-4" />
                               </Button>
@@ -291,6 +296,7 @@ export default function HomePage() {
                                   e.stopPropagation();
                                   deleteTrip(trip.id, trip.name);
                                 }}
+                                className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -368,6 +374,7 @@ export default function HomePage() {
                                 e.stopPropagation();
                                 toggleArchive(trip);
                               }}
+                              className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                             >
                               복원
                             </Button>
@@ -378,6 +385,7 @@ export default function HomePage() {
                                 e.stopPropagation();
                                 deleteTrip(trip.id, trip.name);
                               }}
+                              className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -419,6 +427,7 @@ export default function HomePage() {
                                   e.stopPropagation();
                                   toggleArchive(trip);
                                 }}
+                                className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                               >
                                 복원
                               </Button>
@@ -429,6 +438,7 @@ export default function HomePage() {
                                   e.stopPropagation();
                                   deleteTrip(trip.id, trip.name);
                                 }}
+                                className="flex-1 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
