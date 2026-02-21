@@ -19,7 +19,7 @@ import {
   X,
   Plus,
   GripVertical,
-  ZoomIn
+  ZoomIn,
 } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
 
@@ -192,6 +192,7 @@ export default function EditInfoPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   
   // 확대 보기 상태
@@ -338,6 +339,77 @@ export default function EditInfoPage() {
     }
   }
 
+  // Google Maps에서 장소 검색
+  async function handleSearchPlace() {
+    if (!info?.name) {
+      alert('장소 이름을 입력해주세요!');
+      return;
+    }
+
+    setSearching(true);
+
+    try {
+      console.log('🔍 검색 시작:', info.name);
+
+      const response = await fetch(
+        `/api/search-place?query=${encodeURIComponent(info.name)}`
+      );
+
+      console.log('응답 상태:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '장소 검색 실패');
+      }
+
+      const data = await response.json();
+      console.log('검색 결과:', data);
+
+      if (data.place) {
+        // 새로운 정보
+        const updatedInfo = {
+          ...info,
+          address: data.place.formatted_address || info.address,
+          latitude: data.place.geometry?.location?.lat || info.latitude,
+          longitude: data.place.geometry?.location?.lng || info.longitude,
+          place_id: data.place.place_id || info.place_id,
+        };
+
+        // State 업데이트
+        setInfo(updatedInfo);
+
+        console.log('💾 DB에 저장 중...');
+
+        // DB에 바로 저장
+        const { error } = await supabase
+          .from('trip_infos')
+          .update({
+            address: updatedInfo.address,
+            latitude: updatedInfo.latitude,
+            longitude: updatedInfo.longitude,
+            place_id: updatedInfo.place_id,
+          } as any)
+          .eq('id', infoId);
+
+        if (error) {
+          console.error('저장 오류:', error);
+          throw new Error('DB 저장 실패');
+        }
+
+        console.log('✅ 저장 완료!');
+
+        alert(`✅ 위치 정보가 저장되었습니다!\n📍 ${data.place.formatted_address}`);
+      } else {
+        alert('⚠️ 장소를 찾을 수 없습니다.\n장소 이름을 더 구체적으로 입력하거나\n주소를 직접 입력해주세요.');
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      alert(`오류: ${error.message}`);
+    } finally {
+      setSearching(false);
+    }
+  }
+
   // 저장
   async function handleSave() {
     if (!info) return;
@@ -368,6 +440,28 @@ export default function EditInfoPage() {
       alert('저장 중 오류가 발생했습니다.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  // 정보 삭제
+  async function handleDelete() {
+    if (!confirm('이 정보를 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('trip_infos')
+        .delete()
+        .eq('id', infoId);
+
+      if (error) throw error;
+
+      alert('삭제되었습니다! ✅');
+      router.push(`/trips/${tripId}`);
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('삭제 중 오류가 발생했습니다.');
     }
   }
 
@@ -502,17 +596,46 @@ export default function EditInfoPage() {
               </p>
             </div>
 
-            {/* 나머지 입력 필드들 (기존과 동일) */}
+            {/* 장소 이름 */}
             <div>
               <label className="block text-sm font-medium mb-2 dark:text-gray-200">
                 장소/가게 이름
               </label>
-              <Input
-                value={info.name}
-                onChange={(e) => setInfo({ ...info, name: e.target.value })}
-                placeholder="예: 에펠탑"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={info.name}
+                  onChange={(e) => setInfo({ ...info, name: e.target.value })}
+                  placeholder="예: 에펠탑"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSearchPlace}
+                  disabled={searching || !info.name}
+                  className="shrink-0 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                  {searching ? (
+                    <>
+                      <MapPin className="w-4 h-4 mr-2 animate-spin" />
+                      검색 중...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="w-4 h-4 mr-2" />
+                      위치 조회
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
+
+            {/* 검색 결과 미리보기 */}
+            {info.address && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                📍 {info.address}
+              </p>
+            )}
 
             {/* 카테고리 */}
             <div>
@@ -656,20 +779,30 @@ export default function EditInfoPage() {
               </div>
             </div>
 
-            {/* 저장 버튼 */}
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              size="lg"
-              className="w-full"
-            >
-              {saving ? '저장 중...' : (
-                <>
-                  <Save className="w-5 h-5 mr-2" />
-                  저장하기
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                size="lg"
+                className="flex-1"
+              >
+                {saving ? '저장 중...' : (
+                  <>
+                    <Save className="w-5 h-5 mr-2" />
+                    저장하기
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleDelete}
+                disabled={saving}
+                size="lg"
+                variant="destructive"
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

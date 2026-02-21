@@ -80,16 +80,10 @@ export default function HowToUsePage() {
             {/* 헤더 */}
             <Card className="mb-8">
             <CardHeader className="text-center pb-4">
-                <div className="flex justify-center mb-4">
-                <Image
-                    src="/witty-logo.png"
-                    alt="Witty"
-                    width={80}
-                    height={80}
-                />
+                <div className="flex justify-center mb-2">
                 </div>
-                <CardTitle className="text-3xl mb-2">Witty 사용 방법</CardTitle>
-                <p className="text-gray-600">
+                <CardTitle className="text-3xl font-bold mb-6 dark:text-white">Witty 사용 방법</CardTitle>
+                <p className="text-gray-600 dark:text-gray-300">
                 3분 안에 여행 계획 완성! 간단한 5단계만 따라하세요 ✨
                 </p>
             </CardHeader>
@@ -99,14 +93,14 @@ export default function HowToUsePage() {
             <div className="space-y-6 mb-8">
             {steps.map((step, index) => (
                 <Card key={index} className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
                     <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                         <step.icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <CardTitle className="text-xl">{step.title}</CardTitle>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <CardTitle className="text-xl font-semibold mb-2 dark:text-white">{step.title}</CardTitle>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                         {step.description}
                         </p>
                     </div>
@@ -116,7 +110,7 @@ export default function HowToUsePage() {
                 <CardContent className="pt-6">
                 {/*  스크린샷 추가 */}
                 {step.image && (
-                  <div className="mb-6 rounded-lg overflow-hidden border-2 border-gray-200 shadow-lg">
+                  <div className="mb-6 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-lg">
                     <Image
                       src={step.image}
                       alt={step.title}
@@ -132,7 +126,7 @@ export default function HowToUsePage() {
                     {step.tips.map((tip, tipIndex) => (
                         <li key={tipIndex} className="flex items-start gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">{tip}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{tip}</span>
                         </li>
                     ))}
                     </ul>
@@ -154,7 +148,7 @@ export default function HowToUsePage() {
                         <feature.icon className="w-6 h-6 text-blue-600" />
                     </div>
                     <h3 className="font-semibold mb-2">{feature.title}</h3>
-                    <p className="text-sm text-gray-600">{feature.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{feature.description}</p>
                     </div>
                 ))}
                 </div>
@@ -162,7 +156,7 @@ export default function HowToUsePage() {
             </Card>
 
             {/* CTA */}
-            <Card className="bg-gradient-to-l from-yellow-200 to-orange-300 text-white">
+            <Card className="bg-gradient-to-l from-yellow-200 to-orange-300 dark:from-gray-900 dark:to-gray-800 text-white">
             <CardContent className="py-8 text-center">
                 <h2 className="text-2xl font-bold mb-4">
                 준비됐나요? 지금 바로 시작하세요!

@@ -18,7 +18,7 @@ export default function LoadingScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#DFF4FC] to-white transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#DFF4FC] to-white dark:from-gray-900 dark:to-gray-800 transition-opacity duration-500 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -35,10 +35,10 @@ export default function LoadingScreen() {
 
       {/* 텍스트 */}
       <div className="mt-8 space-y-2 text-center">
-        <h1 className="text-5xl font-bold text-gray-800 animate-fade-in">
+        <h1 className="text-5xl font-bold text-gray-800 dark:from-blue-400 dark:to-indigo-400 animate-fade-in">
           Witty
         </h1>
-        <p className="text-xl text-gray-600 animate-fade-in-delay">
+        <p className="text-xl text-gray-600 dark:text-gray-400 animate-fade-in-delay">
           재미있고 똑똑하게 여행 계획하기!
         </p>
       </div>
