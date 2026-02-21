@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { getTripInfos } from '@/lib/db';
-import type { Trip, TripInfo } from '@/types/trip';
+import type { Trip, TripInfo, Category } from '@/types/trip';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -43,8 +43,122 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// ==================== 드래그 가능한 카드 컴포넌트 ====================
-function SortableInfoCard({
+// ==================== Card 뷰 (드래그 불가, 사진/설명/메모 보임) ====================
+function InfoCard({
+  info,
+  tripId,
+  onCheckToggle,
+  onOpenMaps,
+}: {
+  info: TripInfo;
+  tripId: string;
+  onCheckToggle: (id: string, isCompleted: boolean) => void;
+  onOpenMaps: (info: TripInfo) => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <Card 
+      className={`card-enhanced-clickable h-[400px] flex flex-col ${
+        info.is_completed ? 'opacity-60 bg-gray-50' : ''
+      }`}
+      onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Badge className={CATEGORIES[info.category as Category].color}>
+                {CATEGORIES[info.category as Category].emoji}{' '}
+                {CATEGORIES[info.category as Category].label}
+              </Badge>
+
+              {info.day_number && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  Day {info.day_number}
+                </Badge>
+              )}
+
+              {info.importance > 0 && (
+                <div className="flex gap-0.5">
+                  {Array.from({ length: Math.max(0, info.importance) }).map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <CardTitle className={`text-lg line-clamp-2 ${
+              info.is_completed ? 'line-through text-gray-500' : ''
+            }`}>
+              {info.name}
+            </CardTitle>
+          </div>
+
+          {/* 체크박스 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckToggle(info.id, info.is_completed);
+            }}
+            className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+              info.is_completed
+                ? 'bg-green-500 border-green-500'
+                : 'border-gray-300 hover:border-green-500'
+            }`}
+          >
+            {info.is_completed && <Check className="w-4 h-4 text-white" />}
+          </button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col overflow-hidden">
+        {/* 이미지 */}
+        {info.image_url && (
+          <img
+            src={info.image_url}
+            alt={info.name}
+            className="w-full h-32 object-cover rounded mb-2"
+          />
+        )}
+
+        {/* 내용 (스크롤 가능) */}
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {info.address && (
+            <p className="text-sm text-gray-600 line-clamp-2">📍 {info.address}</p>
+          )}
+          {info.description && (
+            <p className="text-sm text-gray-700 line-clamp-3">{info.description}</p>
+          )}
+          {info.memo && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+              <p className="text-sm line-clamp-2">📝 {info.memo}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Google Maps 버튼 (하단 고정) */}
+        {(info.place_id || info.name || (info.latitude && info.longitude)) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenMaps(info);
+            }}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Maps
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ==================== Compact 뷰 (드래그 가능, 간결함) ====================
+function SortableCompactCard({
   info,
   tripId,
   onCheckToggle,
@@ -79,52 +193,16 @@ function SortableInfoCard({
           info.is_completed ? 'opacity-60 bg-gray-50' : ''
         }`}
       >
-        <CardHeader>
-          <div className="flex items-start gap-3">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-3">
             {/* 드래그 핸들 */}
             <button
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing mt-1 text-gray-400 hover:text-gray-600"
+              className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
             >
               <GripVertical className="w-5 h-5" />
             </button>
-
-            {/* 정보 */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className={CATEGORIES[info.category].color}>
-                  {CATEGORIES[info.category].emoji}{' '}
-                  {CATEGORIES[info.category].label}
-                </Badge>
-
-                {info.day_number && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    Day {info.day_number}
-                  </Badge>
-                )}
-
-                {info.importance > 0 && (
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: info.importance }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <CardTitle
-                className={`text-xl cursor-pointer hover:text-blue-600 ${
-                  info.is_completed ? 'line-through text-gray-500' : ''
-                }`}
-                onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
-              >
-                {info.name}
-              </CardTitle>
-            </div>
 
             {/* 체크박스 */}
             <button
@@ -132,145 +210,70 @@ function SortableInfoCard({
                 e.stopPropagation();
                 onCheckToggle(info.id, info.is_completed);
               }}
-              className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+              className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                 info.is_completed
                   ? 'bg-green-500 border-green-500'
                   : 'border-gray-300 hover:border-green-500'
               }`}
             >
-              {info.is_completed && <Check className="w-4 h-4 text-white" />}
+              {info.is_completed && <Check className="w-3 h-3 text-white" />}
             </button>
-          </div>
-        </CardHeader>
 
-        <CardContent className="space-y-2">
-          {info.address && (
-            <p className="text-sm text-gray-600">📍 {info.address}</p>
-          )}
-          {info.description && (
-            <p className="text-sm text-gray-700">{info.description}</p>
-          )}
-          {info.memo && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
-              <p className="text-sm">📝 {info.memo}</p>
-            </div>
-          )}
-          {info.image_url && (
-            <img
-              src={info.image_url}
-              alt={info.name}
-              className="w-full h-48 object-cover rounded mt-2"
-            />
-          )}
-
-          {/* Google Maps 버튼 */}
-          {(info.place_id || info.name || (info.latitude && info.longitude)) && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenMaps(info);
-              }}
+            {/* 정보 */}
+            <div 
+              className="flex-1 min-w-0 cursor-pointer"
+              onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
             >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Google Maps에서 보기
-            </Button>
-          )}
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="text-base">
+                  {CATEGORIES[info.category as Category].emoji}
+                </span>
+                
+                {info.day_number && (
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-1.5 py-0">
+                    D{info.day_number}
+                  </Badge>
+                )}
+
+                {info.importance > 0 && (
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: Math.max(0, info.importance) }).map((_, i) => (
+                      <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <h3 className={`font-semibold text-sm line-clamp-1 ${
+                info.is_completed ? 'line-through text-gray-500' : ''
+              }`}>
+                {info.name}
+              </h3>
+              
+              {info.address && (
+                <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
+                  📍 {info.address}
+                </p>
+              )}
+            </div>
+
+            {/* Google Maps 버튼 */}
+            {(info.place_id || info.name || (info.latitude && info.longitude)) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenMaps(info);
+                }}
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-// Compact 카드 컴포넌트
-function CompactInfoCard({
-  info,
-  tripId,
-  onCheckToggle,
-  onOpenMaps,
-}: {
-  info: TripInfo;
-  tripId: string;
-  onCheckToggle: (id: string, isCompleted: boolean) => void;
-  onOpenMaps: (info: TripInfo) => void;
-}) {
-  const router = useRouter();
-
-  return (
-    <Card 
-      className={`card-enhanced hover:shadow-sm transition-shadow cursor-pointer ${
-        info.is_completed ? 'opacity-60 bg-gray-50' : ''
-      }`}
-      onClick={() => router.push(`/trips/${tripId}/info/${info.id}`)}
-    >
-      <CardContent className="py-3 px-4">
-        <div className="flex items-center gap-3">
-          {/* 체크박스 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onCheckToggle(info.id, info.is_completed);
-            }}
-            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-              info.is_completed
-                ? 'bg-green-500 border-green-500'
-                : 'border-gray-300 hover:border-green-500'
-            }`}
-          >
-            {info.is_completed && <Check className="w-3 h-3 text-white" />}
-          </button>
-
-          {/* 정보 */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">
-                {CATEGORIES[info.category].emoji}
-              </span>
-              
-              {info.day_number && (
-                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                  Day {info.day_number}
-                </Badge>
-              )}
-
-              {info.importance > 0 && (
-                <div className="flex gap-0.5">
-                  {Array.from({ length: info.importance }).map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <h3 className={`font-semibold text-sm truncate ${
-              info.is_completed ? 'line-through text-gray-500' : ''
-            }`}>
-              {info.name}
-            </h3>
-            
-            {info.address && (
-              <p className="text-xs text-gray-500 truncate">📍 {info.address}</p>
-            )}
-          </div>
-
-          {/* Google Maps 버튼 */}
-          {(info.place_id || info.name || (info.latitude && info.longitude)) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenMaps(info);
-              }}
-            >
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -288,7 +291,7 @@ export default function TripDetailPage() {
   const [showMap, setShowMap] = useState(false);
   const [completionFilter, setCompletionFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [selectedDay, setSelectedDay] = useState<number | null | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'card' | 'compact'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'compact'>('compact');
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -312,7 +315,10 @@ export default function TripDetailPage() {
         .single();
 
       if (tripError) throw tripError;
-      setTrip(tripData as Trip);
+      setTrip({
+        ...(tripData as any),
+        is_archived: (tripData as any).is_archived ?? false
+      } as Trip);
 
       const infosData = await getTripInfos(tripId);
       setInfos(infosData);
@@ -447,7 +453,7 @@ export default function TripDetailPage() {
         </Button>
 
         {/* 여행 정보 */}
-        <Card className="mb-6">
+        <Card className="card-enhanced mb-6">
           <CardHeader>
             <CardTitle className="text-3xl">{trip.name}</CardTitle>
           </CardHeader>
@@ -481,7 +487,7 @@ export default function TripDetailPage() {
             <Map className="w-6 h-6" />
           </Button>
 
-          {/* {infos.length > 0 && (
+          {infos.length > 0 && (
             <Button
               size="lg"
               variant="outline"
@@ -494,12 +500,12 @@ export default function TripDetailPage() {
             >
               <Copy className="w-6 h-6" />
             </Button>
-          )} */}
+          )}
         </div>
 
         {/* 지도 */}
         {showMap && (
-          <Card className="mb-6">
+          <Card className="card-enhanced mb-6">
             <CardHeader>
               <CardTitle>지도로 보기 🗺️</CardTitle>
             </CardHeader>
@@ -611,7 +617,20 @@ export default function TripDetailPage() {
                     </p>
                   </div>
                 ) : viewMode === 'card' ? (
-                  // 카드 뷰 (드래그 가능)
+                  // ⭐ Card 뷰 (2열 그리드, 드래그 불가, 사진/설명/메모 보임)
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {sortedInfos.map((info) => (
+                      <InfoCard
+                        key={info.id}
+                        info={info}
+                        tripId={tripId}
+                        onCheckToggle={handleCheckToggle}
+                        onOpenMaps={handleOpenMaps}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  // ⭐ Compact 뷰 (1열, 드래그 가능, 간결)
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -621,9 +640,9 @@ export default function TripDetailPage() {
                       items={sortedInfos.map((info) => info.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {sortedInfos.map((info) => (
-                          <SortableInfoCard
+                          <SortableCompactCard
                             key={info.id}
                             info={info}
                             tripId={tripId}
@@ -634,19 +653,6 @@ export default function TripDetailPage() {
                       </div>
                     </SortableContext>
                   </DndContext>
-                ) : (
-                  // Compact 뷰 (드래그 불가)
-                  <div className="space-y-2">
-                    {sortedInfos.map((info) => (
-                      <CompactInfoCard
-                        key={info.id}
-                        info={info}
-                        tripId={tripId}
-                        onCheckToggle={handleCheckToggle}
-                        onOpenMaps={handleOpenMaps}
-                      />
-                    ))}
-                  </div>
                 )}
               </TabsContent>
             </Tabs>
