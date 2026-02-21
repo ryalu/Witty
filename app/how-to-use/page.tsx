@@ -15,30 +15,35 @@ export default function HowToUsePage() {
       title: '1. 이미지 업로드',
       description: '인스타그램이나 블로그에서 여행 정보 스크린샷을 찍어 업로드하세요',
       tips: ['여러 장 한번에 업로드 가능', '드래그앤드롭으로 간편하게'],
+      image: '/screenshots/step1-upload.png',
     },
     {
       icon: Sparkles,
       title: '2. AI 자동 분석',
       description: 'AI가 이미지에서 장소명, 주소, 설명을 자동으로 추출합니다',
       tips: ['한 이미지에 여러 장소도 OK', '카테고리 자동 분류 (맛집/관광지/숙소 등)'],
+      image: '/screenshots/step2-analyzing.png',
     },
     {
       icon: CheckCircle,
       title: '3. 확인 & 수정',
       description: 'AI가 추출한 정보를 확인하고 필요하면 수정하세요',
       tips: ['개인 메모 추가 가능', '중요도 별표로 표시', 'Day별로 일정 분류'],
+      image: '/screenshots/step3-review.png',
     },
     {
       icon: Map,
       title: '4. 지도에서 확인',
       description: '모든 장소가 지도에 자동으로 표시됩니다',
       tips: ['카테고리별 색상 구분', '방문 완료 체크 가능', '드래그로 순서 변경'],
+      image: '/screenshots/step4-map.png',
     },
     {
       icon: Smartphone,
       title: '5. Google Maps 연동',
       description: '여행 중 버튼 하나로 Google Maps 앱에서 바로 길찾기!',
       tips: ['모바일에서 앱 자동 실행', '모든 장소 링크 한번에 복사', '친구들과 공유 가능'],
+      image: '/screenshots/step5-googlemaps.png',
     },
   ];
 
@@ -107,7 +112,22 @@ export default function HowToUsePage() {
                     </div>
                     </div>
                 </CardHeader>
-                <CardContent className="pt-4">
+
+                <CardContent className="pt-6">
+                {/*  스크린샷 추가 */}
+                {step.image && (
+                  <div className="mb-6 rounded-lg overflow-hidden border-2 border-gray-200 shadow-lg">
+                    <Image
+                      src={step.image}
+                      alt={step.title}
+                      width={800}
+                      height={450}
+                      className="w-full h-auto"
+                      priority={index === 0}
+                    />
+                  </div>
+                )}
+
                     <ul className="space-y-2">
                     {step.tips.map((tip, tipIndex) => (
                         <li key={tipIndex} className="flex items-start gap-2">
@@ -117,7 +137,7 @@ export default function HowToUsePage() {
                     ))}
                     </ul>
                 </CardContent>
-                </Card>
+              </Card>
             ))}
             </div>
 
@@ -142,10 +162,10 @@ export default function HowToUsePage() {
             </Card>
 
             {/* CTA */}
-            <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+            <Card className="bg-gradient-to-l from-yellow-200 to-orange-300 text-white">
             <CardContent className="py-8 text-center">
                 <h2 className="text-2xl font-bold mb-4">
-                준비됐나요? 지금 바로 시작하세요! 🚀
+                준비됐나요? 지금 바로 시작하세요!
                 </h2>
                 <Button
                 size="lg"

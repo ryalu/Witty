@@ -128,3 +128,14 @@
     --primary: 25 95% 53%;
   }
 }
+
+.card-enhanced {
+  @apply border-0 shadow-lg hover:shadow-xl transition-all duration-300;
+  @apply bg-white/80 backdrop-blur-sm;
+}
+
+.card-enhanced-clickable {
+  @apply border-0 shadow-md hover:shadow-xl transition-all duration-300;
+  @apply bg-white/80 backdrop-blur-sm cursor-pointer;
+  @apply hover:scale-[1.02] hover:-translate-y-1;
+}

@@ -39,7 +39,7 @@ export default function LoadingScreen() {
           Witty
         </h1>
         <p className="text-xl text-gray-600 animate-fade-in-delay">
-          재미있고 똑똑하게 여행 계획!
+          재미있고 똑똑하게 여행 계획하기!
         </p>
       </div>
 
