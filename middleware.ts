@@ -1,34 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 인증 불필요 경로
-  if (pathname.startsWith('/auth')) {
+  // 인증 불필요 경로는 바로 통과
+  if (
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/share') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/witty-logo.png'
+  ) {
     return NextResponse.next();
   }
 
-  // 쿠키에서 세션 확인
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  // Supabase 세션 쿠키 확인 (v2 방식)
+  const cookieStore = request.cookies;
+  const hasSession = cookieStore.getAll().some(
+    (cookie) => cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
+  );
 
-  const token = request.cookies.get('sb-access-token')?.value
-    || request.cookies.get(`sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`)?.value;
-
-  if (!token) {
-    return NextResponse.redirect(new URL('/auth', request.url));
-  }
-
-  const { data: { user } } = await supabase.auth.getUser(token);
-
-  if (!user) {
+  if (!hasSession) {
     return NextResponse.redirect(new URL('/auth', request.url));
   }
 
@@ -36,5 +29,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|witty-logo.png|api|share).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|witty-logo.png).*)'],
 };
