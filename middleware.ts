@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 인증 불필요 경로는 바로 통과
   if (
     pathname.startsWith('/auth') ||
     pathname.startsWith('/share') ||
@@ -15,7 +14,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Supabase 세션 쿠키 확인 (v2 방식)
   const cookieStore = request.cookies;
   const hasSession = cookieStore.getAll().some(
     (cookie) => cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
