@@ -187,44 +187,52 @@ export default function SharePage() {
             infos.map((info) => (
               <Card key={info.id} className="card-enhanced">
                 <CardContent className="py-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Badge className={CATEGORIES[info.category as Category].color}>
-                          {CATEGORIES[info.category as Category].emoji}{' '}
-                          {CATEGORIES[info.category as Category].label}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <Badge className={CATEGORIES[info.category as Category].color}>
+                        {CATEGORIES[info.category as Category].emoji}{' '}
+                        {CATEGORIES[info.category as Category].label}
+                      </Badge>
+                      {info.day_number && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Day {info.day_number}
                         </Badge>
-                        {info.day_number && (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            Day {info.day_number}
-                          </Badge>
-                        )}
-                        {info.importance > 0 && (
-                          <div className="flex gap-0.5">
-                            {Array.from({ length: info.importance }).map((_, i) => (
-                              <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <h3 className="font-semibold text-base">{info.name}</h3>
-                      {info.address && (
-                        <p className="text-sm text-gray-500 mt-1">📍 {info.address}</p>
                       )}
-                      {info.description && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{info.description}</p>
+                      {info.importance > 0 && (
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: info.importance }).map((_, i) => (
+                            <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          ))}
+                        </div>
                       )}
                     </div>
-
-                    {/* 이미지 */}
-                    {(info.images?.[0] || info.image_url) && (
-                      <img
-                        src={info.images?.[0] || info.image_url!}
-                        alt={info.name}
-                        className="w-20 h-20 object-cover rounded flex-shrink-0"
-                      />
+                    <h3 className="font-semibold text-base">{info.name}</h3>
+                    {info.address && (
+                      <p className="text-sm text-gray-500 mt-1">📍 {info.address}</p>
+                    )}
+                    {info.description && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{info.description}</p>
                     )}
                   </div>
+
+                  {/* 이미지 갤러리 */}
+                  {(info.images && info.images.length > 0) || info.image_url ? (
+                    <div className={`grid gap-1 mt-3 ${
+                      (info.images?.length || 0) > 1 ? 'grid-cols-3' : 'grid-cols-1'
+                    }`}>
+                      {(info.images && info.images.length > 0
+                        ? info.images
+                        : [info.image_url!]
+                      ).map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`${info.name} ${idx + 1}`}
+                          className="w-full h-24 object-cover rounded"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
 
                   {/* Maps 버튼 */}
                   {(info.place_id || info.name) && (

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
 import type { Category } from '@/types/trip';
 
@@ -63,26 +63,49 @@ export default function ReviewPage() {
 
     try {
       for (const info of infos) {
+        // 위치 정보 없으면 자동으로 Places API 검색
+        let latitude = info.latitude || null;
+        let longitude = info.longitude || null;
+        let place_id = info.place_id || null;
+        let address = info.address || null;
+
+        if (!latitude && !longitude && info.name) {
+          try {
+            const res = await fetch(`/api/search-place?query=${encodeURIComponent(info.name)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.place) {
+                latitude = data.place.geometry?.location?.lat || null;
+                longitude = data.place.geometry?.location?.lng || null;
+                place_id = data.place.place_id || null;
+                address = address || data.place.formatted_address || null;
+              }
+            }
+          } catch (e) {
+            console.log('위치 자동 검색 실패, 건너뜀:', info.name);
+          }
+        }
+
         await createTripInfo({
           trip_id: tripId,
           category: info.category,
           name: info.name,
-          address: info.address,
+          address,
           description: info.description,
           memo: info.memo || null,
           image_url: info.imageUrl,
           images: [info.imageUrl],
           order: 0,
-          latitude: info.latitude || null,
-          longitude: info.longitude || null,
-          place_id: info.place_id || null,
+          latitude,
+          longitude,
+          place_id,
           is_completed: false,
           importance: 0,
           day_number: null,
         });
       }
 
-      alert('모든 정보가 저장되었습니다! 🎉');
+      alert('모든 정보가 저장되었습니다!\n각 장소를 클릭해서 중요도와 Day를 설정해보세요!');
       router.push(`/trips/${tripId}`);
     } catch (error) {
       console.error('Save error:', error);
@@ -114,7 +137,7 @@ export default function ReviewPage() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-2xl">AI 분석 결과 확인 ✨</CardTitle>
+            <CardTitle className="text-2xl">AI 분석 결과 확인</CardTitle>
             <p className="text-sm text-gray-600">
               AI가 추출한 정보를 확인하고 수정하세요!
             </p>
@@ -201,7 +224,10 @@ export default function ReviewPage() {
           className="w-full mt-6"
         >
           {saving ? (
-            '저장 중...'
+            <>
+              <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+              '저장 중...'
+            </>
           ) : (
             <>
               <Save className="w-5 h-5 mr-2" />
@@ -209,6 +235,9 @@ export default function ReviewPage() {
             </>
           )}
         </Button>
+        <p className="text-center text-xs text-gray-500 mt-2">
+          저장 후 각 장소를 클릭하면 중요도, Day, 위치를 상세 설정할 수 있어요
+        </p>
       </div>
     </div>
   );

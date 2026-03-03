@@ -45,6 +45,7 @@ export default function UploadPage() {
   // 파일 업로드용 상태
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState('');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   
   // URL 입력용 상태
   const [imageUrls, setImageUrls] = useState('');
@@ -64,6 +65,25 @@ export default function UploadPage() {
   // 파일 제거
   function removeFile(index: number) {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  }
+
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
+    }
   }
 
   // 파일 업로드 분석
@@ -230,7 +250,16 @@ export default function UploadPage() {
 
               {/* 파일 업로드 탭 */}
               <TabsContent value="file" className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    isDraggingOver
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400'
+                  }`}
+                >
                   <input
                     type="file"
                     multiple
