@@ -19,6 +19,10 @@ export default function AuthPage() {
 
   async function handleGoogle() {
   setLoading(true);
+
+  const redirectAfter = sessionStorage.getItem('redirect_after_login') || '/';
+  sessionStorage.removeItem('redirect_after_login');
+  
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
