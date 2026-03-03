@@ -32,6 +32,48 @@ export default function SharePage() {
     setUser(data.user);
   }
 
+  function ImageSlider({ images }: { images: string[] }) {
+    const [current, setCurrent] = useState(0);
+
+    if (images.length === 1) {
+      return (
+        <img
+          src={images[0]}
+          alt="장소 이미지"
+          className="w-24 h-24 object-cover rounded flex-shrink-0"
+        />
+      );
+    }
+
+    return (
+      <div className="relative w-24 h-24 flex-shrink-0">
+        <img
+          src={images[current]}
+          alt="장소 이미지"
+          className="w-24 h-24 object-cover rounded"
+        />
+        {/* 이전 */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setCurrent(p => Math.max(0, p - 1)); }}
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center text-xs"
+        >
+          ‹
+        </button>
+        {/* 다음 */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setCurrent(p => Math.min(images.length - 1, p + 1)); }}
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center text-xs"
+        >
+          ›
+        </button>
+        {/* 인디케이터 */}
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-black/50 text-white text-xs rounded">
+          {current + 1}/{images.length}
+        </div>
+      </div>
+    );
+  }
+
   async function loadSharedTrip() {
     try {
       const { data: tripData, error } = await supabase
@@ -216,23 +258,9 @@ export default function SharePage() {
                   </div>
 
                   {/* 이미지 갤러리 */}
-                  {(info.images && info.images.length > 0) || info.image_url ? (
-                    <div className={`grid gap-1 mt-3 ${
-                      (info.images?.length || 0) > 1 ? 'grid-cols-3' : 'grid-cols-1'
-                    }`}>
-                      {(info.images && info.images.length > 0
-                        ? info.images
-                        : [info.image_url!]
-                      ).map((img, idx) => (
-                        <img
-                          key={idx}
-                          src={img}
-                          alt={`${info.name} ${idx + 1}`}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                      ))}
-                    </div>
-                  ) : null}
+                  {((info.images && info.images.length > 0) || info.image_url) && (
+                    <ImageSlider images={info.images?.length ? info.images : [info.image_url!]} />
+                  )}
 
                   {/* Maps 버튼 */}
                   {(info.place_id || info.name) && (
