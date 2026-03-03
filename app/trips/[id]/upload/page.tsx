@@ -8,6 +8,35 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Upload, Sparkles, Link as LinkIcon, X } from 'lucide-react';
 
+async function compressImageClient(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    const img = new Image();
+
+    img.onload = () => {
+      const maxSize = 1200;
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const compressed = canvas.toDataURL('image/jpeg', 0.8);
+      console.log(`🗜️ ${(file.size/1024/1024).toFixed(1)}MB → ${(compressed.length*0.75/1024/1024).toFixed(1)}MB`);
+      URL.revokeObjectURL(img.src);
+      resolve(compressed);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export default function UploadPage() {
   const params = useParams();
   const router = useRouter();
@@ -15,6 +44,7 @@ export default function UploadPage() {
 
   // 파일 업로드용 상태
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [progress, setProgress] = useState('');
   
   // URL 입력용 상태
   const [imageUrls, setImageUrls] = useState('');
@@ -48,12 +78,11 @@ export default function UploadPage() {
     try {
       const analyzedResults: any[] = [];
 
-      for (const file of selectedFiles) {
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve) => {
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
+      for (let i = 0; i< selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        setProgress(`이미지 압축 중... (${i + 1}/${selectedFiles.length})`);
+        const base64 = await compressImageClient(file);
+        setProgress(`AI 분석 중... (${i + 1}/${selectedFiles.length})`);
 
         const response = await fetch('/api/analyze-image', {
           method: 'POST',
@@ -258,7 +287,7 @@ export default function UploadPage() {
                   {analyzing ? (
                     <>
                       <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                      AI 분석 중... ({selectedFiles.length}개)
+                      {progress || 'AI 분석 중...'}
                     </>
                   ) : (
                     <>
