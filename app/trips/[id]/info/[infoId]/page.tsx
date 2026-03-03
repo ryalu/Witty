@@ -349,7 +349,7 @@ export default function EditInfoPage() {
     setSearching(true);
 
     try {
-      console.log('🔍 검색 시작:', info.name);
+      console.log('검색 시작:', info.name);
 
       const response = await fetch(
         `/api/search-place?query=${encodeURIComponent(info.name)}`
@@ -378,7 +378,7 @@ export default function EditInfoPage() {
         // State 업데이트
         setInfo(updatedInfo);
 
-        console.log('💾 DB에 저장 중...');
+        console.log('DB에 저장 중...');
 
         // DB에 바로 저장
         const { error } = await supabase
@@ -396,11 +396,11 @@ export default function EditInfoPage() {
           throw new Error('DB 저장 실패');
         }
 
-        console.log('✅ 저장 완료!');
+        console.log('저장 완료!');
 
-        alert(`✅ 위치 정보가 저장되었습니다!\n📍 ${data.place.formatted_address}`);
+        alert(`위치 정보가 저장되었습니다!\n📍 ${data.place.formatted_address}`);
       } else {
-        alert('⚠️ 장소를 찾을 수 없습니다.\n장소 이름을 더 구체적으로 입력하거나\n주소를 직접 입력해주세요.');
+        alert('장소를 찾을 수 없습니다.\n장소 이름을 더 구체적으로 입력하거나\n주소를 직접 입력해주세요.');
       }
     } catch (error: any) {
       console.error('Search error:', error);
@@ -433,7 +433,7 @@ export default function EditInfoPage() {
 
       if (error) throw error;
 
-      alert('저장되었습니다! ✅');
+      alert('저장되었습니다!');
       router.push(`/trips/${tripId}`);
     } catch (error) {
       console.error('Save error:', error);

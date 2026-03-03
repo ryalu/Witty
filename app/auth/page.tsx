@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -17,16 +17,32 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+        if (data.user) router.push('/');
+    });
+
+    // 로그인 상태 변화 감지 (OAuth 콜백 후)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+        const redirect = sessionStorage.getItem('redirect_after_login') || '/';
+        sessionStorage.removeItem('redirect_after_login');
+        router.push(redirect);
+        }
+    });
+
+    return () => subscription.unsubscribe();
+    }, []);
+
   async function handleGoogle() {
   setLoading(true);
 
   const redirectAfter = sessionStorage.getItem('redirect_after_login') || '/';
-  sessionStorage.removeItem('redirect_after_login');
-  
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectAfter)}`,
     },
   });
   if (error) {
