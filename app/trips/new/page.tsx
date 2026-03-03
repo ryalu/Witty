@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createTrip } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,11 +29,18 @@ export default function NewTripPage() {
 
     try {
       setLoading(true);
-      const trip = await createTrip({
-        ...formData,
-        is_archived: false,
-      });
-      alert('여행이 생성되었습니다! 🎉');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('로그인이 필요합니다.');
+        router.push('/auth');
+        return;
+      }
+      const trip = await createTrip(
+        { ...formData, is_archived: false },
+        user.id  // userId 전달
+      );
+
+      alert('여행이 생성되었습니다!');
       router.push(`/trips/${trip.id}`);
     } catch (error) {
       console.error('Error creating trip:', error);

@@ -1,41 +1,34 @@
-import { supabase, TEMP_USER_ID } from './supabase';
+import { supabase } from './supabase';
 import type { Trip, TripInfo } from '@/types/trip';
 
-// 여행 목록 가져오기
-export async function getTrips(): Promise<Trip[]> {
+export async function getTrips(userId: string): Promise<Trip[]> {
   const { data, error } = await supabase
     .from('trips')
     .select('*')
-    .eq('user_id', TEMP_USER_ID)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
   return (data || []).map((trip: any) => ({
     ...trip,
-    is_archived: trip.is_archived ?? false
+    is_archived: trip.is_archived ?? false,
   })) as Trip[];
 }
 
-// 여행 생성
 export async function createTrip(
-  trip: Omit<Trip, 'id' | 'created_at' | 'user_id'>
+  trip: Omit<Trip, 'id' | 'created_at' | 'user_id'>,
+  userId: string
 ): Promise<Trip> {
   const { data, error } = await supabase
     .from('trips')
-    .insert([{ ...trip, user_id: TEMP_USER_ID,
-      is_archived: trip.is_archived ?? false,
-     }])
+    .insert([{ ...trip, user_id: userId, is_archived: trip.is_archived ?? false }])
     .select()
     .single();
 
   if (error) throw error;
-  return {
-    ...(data as any),
-    is_archived: (data as any).is_archived ?? false
-  } as Trip;
+  return { ...(data as any), is_archived: (data as any).is_archived ?? false } as Trip;
 }
 
-// 여행 정보 가져오기
 export async function getTripInfos(tripId: string): Promise<TripInfo[]> {
   const { data, error } = await supabase
     .from('trip_infos')
@@ -47,7 +40,6 @@ export async function getTripInfos(tripId: string): Promise<TripInfo[]> {
   return (data || []) as TripInfo[];
 }
 
-// 여행 정보 추가
 export async function createTripInfo(
   info: Omit<TripInfo, 'id' | 'created_at'>
 ): Promise<TripInfo> {

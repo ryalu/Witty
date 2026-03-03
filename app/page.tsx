@@ -20,22 +20,29 @@ export default function HomePage() {
   const [showLoading, setShowLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadingTimer = setTimeout(() => {
       setShowLoading(false);
     }, 2500);
 
-    loadTrips();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUserId(data.user.id);
+        loadTrips(data.user.id);
+      }
+    });
 
     return () => clearTimeout(loadingTimer);
   }, []);
 
-  async function loadTrips() {
+  async function loadTrips(userId: string) {
     try {
       const { data, error } = await supabase
         .from('trips')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -64,8 +71,8 @@ export default function HomePage() {
 
       if (error) throw error;
 
-      alert('삭제되었습니다! 🗑️');
-      loadTrips();
+      alert('삭제되었습니다!');
+      if (userId) loadTrips(userId);
     } catch (error) {
       console.error('Delete error:', error);
       alert('삭제 실패');
@@ -82,8 +89,8 @@ export default function HomePage() {
 
       if (error) throw error;
 
-      alert(newArchiveState ? '완료됨 탭으로 이동했습니다! ✅' : '진행 중 탭으로 복원했습니다! 🔄');
-      loadTrips();
+      alert(newArchiveState ? '완료됨 탭으로 이동했습니다!' : '진행 중 탭으로 복원했습니다!');
+      if (userId) loadTrips(userId);
     } catch (error) {
       console.error('Archive toggle error:', error);
       alert('변경 실패');

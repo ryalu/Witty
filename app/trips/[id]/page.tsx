@@ -10,16 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { 
-  ArrowLeft, 
-  Upload, 
-  Map, 
-  ExternalLink, 
-  Star, 
-  Check, 
-  Copy, 
-  GripVertical,
-  LayoutGrid,
-  List
+  ArrowLeft, Upload, Map, ExternalLink, 
+  Star, Check, Copy, GripVertical,
+  LayoutGrid, List,
+  Share2, Globe, GlobeLock
 } from 'lucide-react';
 import { CATEGORIES } from '@/constants/categories';
 import { getGoogleMapsUrl, generateAllPlacesLinks } from '@/lib/maps';
@@ -352,6 +346,8 @@ export default function TripDetailPage() {
   const [completionFilter, setCompletionFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [selectedDay, setSelectedDay] = useState<number | null | 'all'>('all');
   const [viewMode, setViewMode] = useState<'card' | 'compact'>('card');
+  const [sharing, setSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -379,6 +375,10 @@ export default function TripDetailPage() {
         ...(tripData as any),
         is_archived: (tripData as any).is_archived ?? false
       } as Trip);
+
+      if ((tripData as any).share_token && (tripData as any).is_public) {
+        setShareUrl(`${window.location.origin}/share/${(tripData as any).share_token}`);
+      }
 
       const infosData = await getTripInfos(tripId);
       setInfos(infosData);
@@ -481,6 +481,46 @@ export default function TripDetailPage() {
     window.open(url, '_blank');
   }
 
+  async function handleToggleShare() {
+  if (!trip) return;
+  setSharing(true);
+
+  try {
+    const isCurrentlyPublic = (trip as any).is_public;
+
+    if (isCurrentlyPublic) {
+      // 공유 끄기
+      const { error } = await supabase
+        .from('trips')
+        .update({ is_public: false } as any)
+        .eq('id', tripId);
+      if (error) throw error;
+      setShareUrl(null);
+      setTrip(prev => prev ? { ...prev, is_public: false } as any : null);
+    } else {
+      // 공유 켜기 - share_token 생성
+      const { data, error } = await supabase
+        .from('trips')
+        .update({
+          is_public: true,
+          share_token: crypto.randomUUID(),
+        } as any)
+        .eq('id', tripId)
+        .select()
+        .single();
+      if (error) throw error;
+      const url = `${window.location.origin}/share/${(data as any).share_token}`;
+      setShareUrl(url);
+      setTrip(prev => prev ? { ...prev, is_public: true } as any : null);
+    }
+  } catch (error) {
+    console.error('공유 설정 실패:', error);
+    alert('공유 설정에 실패했습니다.');
+  } finally {
+    setSharing(false);
+  }
+}
+
   // 로딩 & 에러 상태
   if (loading) {
     return (
@@ -561,7 +601,41 @@ export default function TripDetailPage() {
               <Copy className="w-6 h-6" />
             </Button>
           )}
+
+          <Button
+            size="lg"
+            variant="outline"
+            className={`h-[64px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 ${
+              (trip as any).is_public ? 'border-green-500 text-green-600' : ''
+            }`}
+            onClick={handleToggleShare}
+            disabled={sharing}
+          >
+            {(trip as any).is_public ? (
+              <Globe className="w-6 h-6" />
+            ) : (
+              <GlobeLock className="w-6 h-6" />
+            )}
+          </Button>
         </div>
+
+        {shareUrl && (
+          <div className="flex items-center gap-2 mb-6 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <Globe className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <p className="text-sm text-green-700 dark:text-green-400 flex-1 truncate">{shareUrl}</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-green-600 hover:text-green-700 flex-shrink-0"
+              onClick={() => {
+                navigator.clipboard.writeText(shareUrl);
+                alert('링크가 복사되었습니다! 🔗');
+              }}
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
 
         {/* 지도 */}
         {showMap && (
