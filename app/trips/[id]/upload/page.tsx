@@ -114,8 +114,8 @@ export default function UploadPage() {
       }
 
       // 결과를 review 페이지로 전달
-      const encoded = encodeURIComponent(JSON.stringify(analyzedResults));
-      router.push(`/trips/${tripId}/review?data=${encoded}`);
+      sessionStorage.setItem('reviewData', JSON.stringify(analyzedResults));
+      router.push(`/trips/${tripId}/review`);
     } catch (error) {
       console.error('분석 실패:', error);
       alert('이미지 분석 중 오류가 발생했습니다.');
@@ -186,8 +186,8 @@ export default function UploadPage() {
       }
 
       // 결과를 review 페이지로 전달
-      const encoded = encodeURIComponent(JSON.stringify(analyzedResults));
-      router.push(`/trips/${tripId}/review?data=${encoded}`);
+      sessionStorage.setItem('reviewData', JSON.stringify(analyzedResults));
+      router.push(`/trips/${tripId}/review`);
     } catch (error) {
       console.error('분석 실패:', error);
       alert('URL 분석 중 오류가 발생했습니다.');

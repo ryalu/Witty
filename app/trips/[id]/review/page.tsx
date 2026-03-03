@@ -34,29 +34,21 @@ export default function ReviewPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const dataParam = searchParams.get('data');
-
-    if (dataParam) {
-      try {
-        const decoded = decodeURIComponent(dataParam);
-        const data = JSON.parse(decoded);
-        setInfos(data);
-      } catch (error) {
-        console.error('데이터 파싱 실패:', error);
-        alert('데이터를 불러올 수 없습니다.');
-        router.push(`/trips/${tripId}`);
-      }
-    } else {
-      const stored = localStorage.getItem('analyzedResults');
-      if (stored) {
-        setInfos(JSON.parse(stored));
-        localStorage.removeItem('analyzedResults');
-      } else {
-        alert('분석 결과가 없습니다.');
-        router.push(`/trips/${tripId}`);
-      }
+    const stored = sessionStorage.getItem('reviewData');
+  if (stored) {
+    try {
+      setInfos(JSON.parse(stored));
+      sessionStorage.removeItem('reviewData');
+    } catch (error) {
+      console.error('데이터 파싱 실패:', error);
+      alert('데이터를 불러올 수 없습니다.');
+      router.push(`/trips/${tripId}`);
     }
-  }, [searchParams, tripId, router]);
+  } else {
+    alert('분석 결과가 없습니다.');
+    router.push(`/trips/${tripId}`);
+  }
+}, [tripId, router]);
 
   function updateInfo(index: number, field: string, value: string) {
     setInfos((prev) => {
